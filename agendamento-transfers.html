@@ -230,7 +230,8 @@
 </style>
 </head>
 <body>
-<script>/* Site público (GitHub Pages): só o pedido de transfer para clientes */ if (/(^|\.)github\.io$/.test(location.hostname)) document.documentElement.classList.add("publico");</script>
+<script>/* Site público (GitHub Pages): só o pedido de transfer para clientes. A versão de gestão abre com ?gestao (ver gestao.html) */
+if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(location.search + location.hash)) document.documentElement.classList.add("publico");</script>
 
 <header>
   <div class="facetas" aria-hidden="true"><svg viewBox="0 0 380 200" preserveAspectRatio="none"><polygon points="70,0 380,0 380,200 70,200 130,100" fill="#c8141f"/><polygon points="120,0 380,0 250,70" fill="#e31b2b"/><polygon points="250,70 380,0 380,110" fill="#a50f18"/><polygon points="130,100 250,70 300,120" fill="#f0404b"/><polygon points="130,100 300,120 380,110 380,200 200,200" fill="#d4161f"/><polygon points="200,200 380,200 380,150" fill="#9b0e16"/><polygon points="58,0 66,0 126,100 66,200 58,200 118,100" fill="#e31b2b"/></svg></div>

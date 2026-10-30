@@ -2,6 +2,7 @@
 <html lang="pt-PT">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1d25">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -223,7 +224,7 @@
 </head>
 <body>
 <script>/* No site público (GitHub Pages) o dashboard não está disponível: só nos ficheiros do PC */
-if (/(^|\.)github\.io$/.test(location.hostname)) location.replace("./");</script>
+if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(location.search + location.hash)) location.replace("./");</script>
 
 <header>
   <div class="facetas" aria-hidden="true"><svg viewBox="0 0 380 200" preserveAspectRatio="none"><polygon points="70,0 380,0 380,200 70,200 130,100" fill="#c8141f"/><polygon points="120,0 380,0 250,70" fill="#e31b2b"/><polygon points="250,70 380,0 380,110" fill="#a50f18"/><polygon points="130,100 250,70 300,120" fill="#f0404b"/><polygon points="130,100 300,120 380,110 380,200 200,200" fill="#d4161f"/><polygon points="200,200 380,200 380,150" fill="#9b0e16"/><polygon points="58,0 66,0 126,100 66,200 58,200 118,100" fill="#e31b2b"/></svg></div>

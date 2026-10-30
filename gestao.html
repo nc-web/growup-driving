@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1a1d25">
+<title>Gestão GrowuP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#e31b2b;--bg:#15181f;--card:#1c2029;--ink:#f3f4f6;--muted:#a3aab8;--line:#2c323e;
+        --stripes:repeating-linear-gradient(135deg,rgba(255,255,255,.028) 0 2px,transparent 2px 14px);color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg) var(--stripes);color:var(--ink);font:16px/1.5 "Montserrat",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+  header{position:relative;overflow:hidden;background:#1a1d25 var(--stripes);border-bottom:3px solid var(--red);padding:48px 16px 56px}
+  .facetas{position:absolute;right:0;top:0;height:100%;width:min(38vw,440px)}
+  .facetas svg{width:100%;height:100%;display:block}
+  @media(max-width:700px){.facetas{width:120px;opacity:.5}}
+  .wrap{position:relative;z-index:2;max-width:960px;margin:0 auto}
+  .marca{display:flex;align-items:center;gap:18px}
+  .marca svg{width:78px;height:78px;flex:none}
+  .wm b{display:block;font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1}
+  .wm b em{font-style:normal;color:var(--red)}
+  .wm span{display:block;font-size:14px;font-weight:600;letter-spacing:.55em;margin-top:8px}
+  .lema{margin:28px 0 0;color:#d4d8e0;font-size:14px;letter-spacing:.3em;text-transform:uppercase}
+  .lema::before{content:"";display:block;width:64px;height:3px;background:var(--red);margin-bottom:16px}
+  main{flex:1;max-width:960px;width:100%;margin:-28px auto 40px;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr;align-content:start;position:relative;z-index:3}
+  @media(min-width:760px){main{grid-template-columns:1fr 1fr}}
+  a.app{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--red);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:transform .15s,border-color .15s}
+  a.app:hover{transform:translateY(-2px);border-color:var(--red)}
+  a.app h2{margin:0 0 8px;font-size:15px;letter-spacing:.22em;text-transform:uppercase}
+  a.app h2::after{content:"";display:block;width:40px;height:2px;background:var(--red);margin-top:8px}
+  a.app p{margin:0 0 16px;color:var(--muted);font-size:14px}
+  a.app span{display:inline-block;background:var(--red);color:#fff;font-weight:700;border-radius:10px;padding:10px 16px;font-size:14px}
+  .nota{grid-column:1/-1;color:var(--muted);font-size:13px;text-align:center}
+  footer{text-align:center;color:#7d8696;font-size:12px;letter-spacing:.2em;padding:0 16px 28px}
+  footer a{color:#c2c7d0}
+</style>
+</head>
+<body>
+<header>
+  <div class="facetas" aria-hidden="true"><svg viewBox="0 0 380 200" preserveAspectRatio="none"><polygon points="70,0 380,0 380,200 70,200 130,100" fill="#c8141f"/><polygon points="120,0 380,0 250,70" fill="#e31b2b"/><polygon points="250,70 380,0 380,110" fill="#a50f18"/><polygon points="130,100 250,70 300,120" fill="#f0404b"/><polygon points="130,100 300,120 380,110 380,200 200,200" fill="#d4161f"/><polygon points="200,200 380,200 380,150" fill="#9b0e16"/><polygon points="58,0 66,0 126,100 66,200 58,200 118,100" fill="#e31b2b"/></svg></div>
+  <div class="wrap">
+    <div class="marca">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="#e31b2b" stroke-width="7"/><path d="M22 80 C34 70 44 56 56 42 L66 31" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/><path d="M25 77 C36 68 45 56 56 43 L63 35" fill="none" stroke="#1a1d25" stroke-width="2" stroke-dasharray="5 4"/><path d="M58 24 L80 18 L74 40 Z" fill="#e31b2b"/></svg>
+      <div class="wm"><b>Grow<em>uP</em></b><span>DRIVING</span></div>
+    </div>
+    <p class="lema">Gestão interna</p>
+  </div>
+</header>
+<main>
+  <a class="app" href="agendamento-transfers.html?gestao">
+    <h2>Transfers</h2>
+    <p>Agendar e confirmar transfers, lista de agendamentos, link do cliente, Google Calendar, dashboard de transfers e separador Dashboard TVDE.</p>
+    <span>Abrir transfers →</span>
+  </a>
+  <a class="app" href="dashboard-tvde.html?gestao">
+    <h2>Dashboard TVDE</h2>
+    <p>Receitas, despesas e lucro por semana, divisão 50/50, registo de movimentos e de lucros na folha e envio de faturas.</p>
+    <span>Abrir dashboard →</span>
+  </a>
+  <p class="nota">Para ler e gravar na folha é preciso o código de acesso, que se introduz uma vez em ⚙️ Definições (fica guardado só nesse browser). Página dos clientes: <a href="./" style="color:#ff8a92">início</a> · <a href="reserva.html" style="color:#ff8a92">reservas</a>.</p>
+</main>
+<footer><a href="tel:+351969259112">969 259 112</a> · <a href="https://www.instagram.com/growup_drive/" target="_blank" rel="noopener">@growup_drive</a></footer>
+</body>
+</html>
