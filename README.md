@@ -9,7 +9,7 @@ Ferramentas web da GrowuP Driving (TVDE e transfers), feitas em HTML/JavaScript 
 | Ficheiro | O que faz |
 |---|---|
 | `index.html` | Página inicial com acesso às duas ferramentas |
-| `agendamento-transfers.html` | Agendamento de transfers: distância e preço pelo Google Maps (5 € até 5 km, +0,60 €/km), lista de agendamentos, dashboard de transfers, link para o Google Calendar e separador Dashboard TVDE |
+| `agendamento-transfers.html` | Agendamento de transfers: distância e preço pelo Google Maps (5 € até 5 km, +0,80 €/km), lista de agendamentos, dashboard de transfers, link para o Google Calendar e separador Dashboard TVDE |
 | `dashboard-tvde.html` | Dashboard TVDE: receitas/despesas por semana, gráficos, divisão do lucro 50/50 (Nuno Cardoso / Bruno Pinto), registo de movimentos, registo de lucro semanal e envio de faturas |
 | `apps-script/GrowUP-Dashboard-AppsScript.gs` | Apps Script publicado como app web: lê e escreve no `GrowuP Driving.xlsx` (abas *Entradas e Saídas* e *Lucros Semanais*) e guarda faturas no Drive |
 | `apps-script/GrowUP-Faturas-Continente.gs` | Apps Script com acionador de hora a hora: guarda no Drive os PDF das faturas Continente Plug&Charge recebidas no Gmail |
