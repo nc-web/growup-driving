@@ -224,14 +224,14 @@
   #map .leaflet-control-attribution a{color:#ff8a92}
   .pino{width:28px;height:28px;border-radius:50%;color:#fff;font:800 13px/24px "Montserrat",system-ui,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45)}
   #detalhe, #fonte{display:none}   /* detalhe do cálculo e fonte da distância ficam escondidos */
-  .publico .so-interno{display:none!important}
+  .publico .so-interno, .publico nav.tabs{display:none!important}
   .rodape-marca{max-width:960px;margin:0 auto 32px;padding:0 16px;color:#7d8696;font-size:11px;letter-spacing:.32em;text-align:center;text-transform:uppercase}
   .rodape-marca b{color:#c2c7d0;font-weight:600}
 </style>
 </head>
 <body>
-<script>/* Site público (GitHub Pages): o Dashboard TVDE não aparece aqui; tem link próprio (gestao.html → dashboard-tvde.html?gestao) */
-if (/(^|\.)github\.io$/.test(location.hostname)) document.documentElement.classList.add("publico");</script>
+<script>/* Site público (GitHub Pages): só o separador Agendar. Os separadores Transfers e Dashboard TVDE abrem pelo link de gestão (?gestao, ver gestao.html) */
+if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(location.search + location.hash)) document.documentElement.classList.add("publico");</script>
 
 <header>
   <div class="facetas" aria-hidden="true"><svg viewBox="0 0 380 200" preserveAspectRatio="none"><polygon points="70,0 380,0 380,200 70,200 130,100" fill="#c8141f"/><polygon points="120,0 380,0 250,70" fill="#e31b2b"/><polygon points="250,70 380,0 380,110" fill="#a50f18"/><polygon points="130,100 250,70 300,120" fill="#f0404b"/><polygon points="130,100 300,120 380,110 380,200 200,200" fill="#d4161f"/><polygon points="200,200 380,200 380,150" fill="#9b0e16"/><polygon points="58,0 66,0 126,100 66,200 58,200 118,100" fill="#e31b2b"/></svg></div>
@@ -244,7 +244,7 @@ if (/(^|\.)github\.io$/.test(location.hostname)) document.documentElement.classL
   </div>
   <nav class="tabs">
     <button class="tab on" data-view="viewAgendar">Agendar</button>
-    <button class="tab" data-view="viewDash">Transfers</button>
+    <button class="tab so-interno" data-view="viewDash">Transfers</button>
     <button class="tab so-interno" data-view="viewTvde">Dashboard TVDE</button>
   </nav>
 </header>
@@ -1005,6 +1005,9 @@ document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
     if (!contaGoogle() && scriptUrl() && scriptToken() && (!tvDados || Date.now() - new Date(tvDados.atualizado) > 30 * 60e3)) atualizarDaFolha();
   }
 });
+// Link direto para um separador: #transfers ou #tvde (usado em gestao.html)
+{ const v = { "#transfers": "viewDash", "#tvde": "viewTvde" }[location.hash];
+  if (v) setTimeout(() => document.querySelector(`.tab[data-view="${v}"]`)?.click(), 0); }
 
 $("btnAgendar").onclick = () => {
   const a = recolherDados(); if (!a) return;
