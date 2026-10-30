@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a1d25">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -216,6 +217,12 @@
   .acoes{flex-wrap:wrap;row-gap:6px}
   .acoes button.cal{color:#ff8a92!important;text-decoration:none!important;font-weight:600}
   .cal-topo{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin:-4px 0 12px}
+  #map{height:320px}
+  #map.com-mapa{display:block;padding:0;overflow:hidden}
+  #map .leaflet-tile-pane{filter:saturate(.85) brightness(.92)}
+  #map .leaflet-control-attribution{background:rgba(26,29,37,.8);color:#a3aab8;font-size:10px}
+  #map .leaflet-control-attribution a{color:#ff8a92}
+  .pino{width:28px;height:28px;border-radius:50%;color:#fff;font:800 13px/24px "Montserrat",system-ui,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45)}
   .rodape-marca{max-width:960px;margin:0 auto 32px;padding:0 16px;color:#7d8696;font-size:11px;letter-spacing:.32em;text-align:center;text-transform:uppercase}
   .rodape-marca b{color:#c2c7d0;font-weight:600}
 </style>
@@ -606,11 +613,6 @@
 <dialog id="dlg">
   <h2 style="margin-top:0">Definições</h2>
   <div class="field">
-    <label for="cfgKey">Chave da API Google Maps</label>
-    <input id="cfgKey" placeholder="AIza...">
-    <div class="tabela">Ative no Google Cloud: Maps JavaScript API, Routes API e Places API (New). Sem chave (ou se a Google recusar), a app usa OpenStreetMap.</div>
-  </div>
-  <div class="field">
     <label for="cfgWhats">WhatsApp para receber pedidos (só números, com indicativo)</label>
     <input id="cfgWhats" placeholder="3519xxxxxxxx">
   </div>
@@ -638,7 +640,6 @@
 <script>
 /* ================== CONFIGURAÇÃO ================== */
 const CONFIG = {
-  GOOGLE_MAPS_API_KEY: "",      // cole aqui a sua chave (ou use ⚙️ Definições)
   WHATSAPP: "",                 // ex.: "351912345678"
   PRECO_BASE: 5.00,             // até KM_BASE
   KM_BASE: 5,
@@ -658,7 +659,6 @@ const kmFmt = n => n.toLocaleString("pt-PT",{maximumFractionDigits:1}) + " km";
 function durFmt(s){ const m = Math.round(s/60); return m < 60 ? m + " min" : Math.floor(m/60) + "h " + (m%60) + "m"; }
 function mostrar(texto, tipo){ const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo||""); }
 
-const apiKey   = () => store.get("cfg_key", "") || CONFIG.GOOGLE_MAPS_API_KEY;
 const whatsNum = () => store.get("cfg_whats", "") || CONFIG.WHATSAPP;
 
 /* ================== PREÇO ================== */
@@ -671,109 +671,67 @@ function calcularPreco(km){
   return { total: Math.round(total * 100) / 100, extra };
 }
 
-/* ================== GOOGLE MAPS ================== */
-// Uma só chave, 3 APIs ativas no Google Cloud:
-//   Maps JavaScript API  -> mapa            (10.000 carregamentos/mês grátis)
-//   Routes API           -> km e duração    (Compute Routes Essentials: 10.000/mês grátis)
-//   Places API (New)     -> sugestões       (sessões de autocomplete grátis; Place Details Essentials 10.000/mês)
-let gReady = null, gLibs = null, sessionToken = null, gFalhou = false;
-let map = null, linhas = [], marcadores = [];
+/* ================== MAPAS: OpenStreetMap ================== */
+// Mapa: Leaflet + mosaicos OpenStreetMap · Sugestões: Photon (komoot) · Moradas: Nominatim · Percurso: OSRM
+// Serviços públicos e gratuitos, sem chave. Respeitar os limites: as pesquisas só são feitas depois de parar de escrever.
+const OSM = { LEAFLET_JS: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js",
+              CENTRO: { lat: 38.75, lng: -9.2 } };   // Lisboa: dá prioridade a moradas próximas
+let map = null, camadaRota = null;
 
-window.gm_authFailure = () => {
-  gFalhou = true;
-  mostrar("A Google recusou a chave (confirme as APIs ativas, a faturação e as restrições de domínio). A usar OpenStreetMap.", "err");
-};
-
-function carregarGoogle(){
-  if (!apiKey()) return Promise.resolve(false);
-  if (gReady) return gReady;
-  gReady = new Promise(resolve => {
-    window.__gmInit = async () => {
-      try{
-        const [maps, routes, places, marker] = await Promise.all(
-          ["maps", "routes", "places", "marker"].map(l => google.maps.importLibrary(l)));
-        gLibs = { maps, routes, places, marker };
-        sessionToken = new places.AutocompleteSessionToken();
-        resolve(true);
-      }catch(e){ console.error(e); resolve(false); }
-    };
-    const s = document.createElement("script");
-    s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(apiKey())
-      + "&v=weekly&language=pt-PT&region=PT&loading=async&callback=__gmInit";
-    s.async = true;
-    s.onerror = () => resolve(false);
-    document.head.appendChild(s);
-  });
-  return gReady;
+function textoPhoton(p){
+  const rua = [p.street, p.housenumber].filter(Boolean).join(" ");
+  const local = p.city || p.town || p.village || p.district || p.county || "";
+  const partes = [p.name, rua && rua !== p.name ? rua : "", p.postcode, local].filter(Boolean);
+  return [...new Set(partes)].join(", ");
 }
-async function usarGoogle(){ return (await carregarGoogle()) && !gFalhou; }
-
-async function sugestoesGoogle(texto){
-  const { suggestions } = await gLibs.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-    input: texto, sessionToken, includedRegionCodes: [CONFIG.PAIS], language: "pt-PT", region: CONFIG.PAIS
-  });
-  return suggestions.filter(s => s.placePrediction)
-    .map(s => ({ texto: s.placePrediction.text.toString(), pred: s.placePrediction }));
+async function sugestoesOSM(texto){
+  const u = `https://photon.komoot.io/api/?q=${encodeURIComponent(texto)}&limit=8&lat=${OSM.CENTRO.lat}&lon=${OSM.CENTRO.lng}`;
+  const j = await (await fetch(u)).json();
+  const vistos = new Set();
+  return (j.features || []).filter(x => (x.properties.countrycode || "").toLowerCase() === CONFIG.PAIS)
+    .map(x => ({ texto: textoPhoton(x.properties), coords: { lat: x.geometry.coordinates[1], lng: x.geometry.coordinates[0] } }))
+    .filter(x => x.texto && !vistos.has(x.texto) && vistos.add(x.texto));
 }
-
-// Ao escolher uma sugestão: obtém as coordenadas exatas e fecha a sessão de autocomplete
-async function coordenadasGoogle(item){
-  const place = item.pred.toPlace();
-  await place.fetchFields({ fields: ["location"] });
-  sessionToken = new gLibs.places.AutocompleteSessionToken();
-  return { lat: place.location.lat(), lng: place.location.lng() };
-}
-
-async function rotaGoogle(origem, destino){
-  const { routes } = await gLibs.routes.Route.computeRoutes({
-    origin: origem, destination: destino,
-    travelMode: "DRIVING", routingPreference: "TRAFFIC_UNAWARE",
-    language: "pt-PT", region: CONFIG.PAIS,
-    fields: ["distanceMeters", "durationMillis", "path"]
-  });
-  if (!routes || !routes.length) throw new Error("Não foi possível calcular o percurso.");
-  const rt = routes[0];
-  return { metros: rt.distanceMeters, segundos: (rt.durationMillis || 0) / 1000,
-           path: (rt.path || []).map(p => ({ lat: p.lat, lng: p.lng })), fonte: "Google Maps (Routes API)" };
-}
-
-function desenharMapa(path){
-  const el = $("map");
-  if (!path || !path.length || !gLibs){
-    el.textContent = apiKey() ? "Mapa indisponível para este percurso." : "Mapa disponível ao configurar a chave Google Maps em ⚙️ Definições.";
-    return;
-  }
-  if (!map){
-    el.textContent = ""; el.style.padding = "0";
-    map = new gLibs.maps.Map(el, { mapId: "DEMO_MAP_ID", disableDefaultUI: true, zoomControl: true, gestureHandling: "cooperative" });
-  }
-  linhas.forEach(l => l.setMap(null)); marcadores.forEach(m => m.map = null);
-  linhas = [new gLibs.maps.Polyline({ path, strokeColor: "#f59e0b", strokeWeight: 5, strokeOpacity: .95, map })];
-  const { AdvancedMarkerElement, PinElement } = gLibs.marker;
-  marcadores = [[path[0], "A", "#16a34a"], [path[path.length - 1], "B", "#dc2626"]].map(([pos, g, c]) =>
-    new AdvancedMarkerElement({ map, position: pos,
-      content: new PinElement({ glyph: g, background: c, borderColor: c, glyphColor: "#fff" }).element }));
-  const b = new gLibs.maps.LatLngBounds(); path.forEach(p => b.extend(p)); map.fitBounds(b, 30);
-}
-
-/* ================== ALTERNATIVA SEM CHAVE (OpenStreetMap) ================== */
 async function geocodeOSM(q){
-  const u = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=${CONFIG.PAIS}&accept-language=pt&q=${encodeURIComponent(q)}`;
-  const r = await fetch(u); return r.json();
+  const u = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=${CONFIG.PAIS}&accept-language=pt&q=${encodeURIComponent(q)}`;
+  return (await fetch(u)).json();
 }
-async function sugestoesOSM(texto){ return (await geocodeOSM(texto)).map(x => ({ texto: x.display_name, coords: { lat: +x.lat, lng: +x.lon } })); }
 async function pontoOSM(p, nome){
   if (typeof p !== "string") return p;
   const r = await geocodeOSM(p);
-  if (!r.length) throw new Error("Morada de " + nome + " não encontrada.");
+  if (!r.length) throw new Error(`Morada de ${nome} não encontrada. Escolha uma das sugestões da lista.`);
   return { lat: +r[0].lat, lng: +r[0].lon };
 }
 async function rotaOSM(origem, destino){
-  const [a, b] = await Promise.all([pontoOSM(origem, "recolha"), pontoOSM(destino, "chegada")]);
-  const u = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`;
+  const a = await pontoOSM(origem, "recolha"), b = await pontoOSM(destino, "chegada");
+  const u = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
   const j = await (await fetch(u)).json();
   if (!j.routes || !j.routes.length) throw new Error("Não foi possível calcular o percurso.");
-  return { metros: j.routes[0].distance, segundos: j.routes[0].duration, path: null, fonte: "OpenStreetMap" };
+  return { metros: j.routes[0].distance, segundos: j.routes[0].duration, a, b,
+           path: j.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]), fonte: "OpenStreetMap (OSRM)" };
+}
+
+async function desenharMapa(r){
+  const el = $("map");
+  try{ await carregarScript(OSM.LEAFLET_JS, () => window.L); }
+  catch(e){ el.textContent = "Mapa indisponível (sem ligação à internet)."; return; }
+  if (!map){
+    el.textContent = ""; el.classList.add("com-mapa");
+    map = L.map(el, { zoomControl: true, scrollWheelZoom: false, attributionControl: true });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(map);
+  }
+  if (camadaRota) camadaRota.remove();
+  const pino = (txt, cor) => L.divIcon({ className: "", iconSize: [28, 28], iconAnchor: [14, 14],
+    html: `<div class="pino" style="background:${cor}">${txt}</div>` });
+  const linha = L.polyline(r.path, { color: "#e31b2b", weight: 5, opacity: .95 });
+  camadaRota = L.featureGroup([
+    L.polyline(r.path, { color: "#1a1d25", weight: 9, opacity: .55 }), linha,
+    L.marker([r.a.lat, r.a.lng], { icon: pino("A", "#16a34a"), title: "Recolha" }),
+    L.marker([r.b.lat, r.b.lng], { icon: pino("B", "#e31b2b"), title: "Chegada" })
+  ]).addTo(map);
+  map.invalidateSize();
+  map.fitBounds(linha.getBounds(), { padding: [28, 28] });
 }
 
 /* ================== AUTOCOMPLETE ================== */
@@ -784,7 +742,7 @@ function ligarAutocomplete(inputId, boxId){
   const fechar = () => { box.style.display = "none"; idx = -1; };
   const selecionar = async item => {
     inp.value = item.texto; fechar(); escolha[inputId] = null;
-    try{ escolha[inputId] = item.coords || (item.pred ? await coordenadasGoogle(item) : null); }catch(e){}
+    escolha[inputId] = item.coords || null;
   };
   inp.addEventListener("input", () => {
     invalidar(); escolha[inputId] = null;
@@ -793,10 +751,7 @@ function ligarAutocomplete(inputId, boxId){
     if (v.length < 3) return fechar();
     t = setTimeout(async () => {
       try{
-        const temG = await usarGoogle();
-        try{ itens = temG ? await sugestoesGoogle(v) : await sugestoesOSM(v); }
-        catch(e){ itens = await sugestoesOSM(v); }
-        itens = itens.slice(0, 5);
+        itens = (await sugestoesOSM(v)).slice(0, 6);
         box.innerHTML = "";
         itens.forEach(item => {
           const d = document.createElement("div"); d.textContent = item.texto;
@@ -805,7 +760,7 @@ function ligarAutocomplete(inputId, boxId){
         });
         box.style.display = itens.length ? "block" : "none";
       }catch(e){ fechar(); }
-    }, apiKey() ? 250 : 700);
+    }, 450);
   });
   inp.addEventListener("keydown", e => {
     const els = [...box.children]; if (!els.length || box.style.display === "none") return;
@@ -829,15 +784,7 @@ async function calcular(){
   if (!origem || !destino) return mostrar("Indique o local de recolha e o local de chegada.", "err");
   const btn = $("btnCalc"); btn.disabled = true; btn.textContent = "A calcular…"; mostrar("");
   try{
-    const temG = await usarGoogle();
-    const pO = escolha.origem || origem, pD = escolha.destino || destino;
-    let r;
-    try{ r = temG ? await rotaGoogle(pO, pD) : await rotaOSM(pO, pD); }
-    catch(e){
-      if (!temG) throw e;
-      console.warn("Routes API falhou:", e);
-      r = await rotaOSM(pO, pD); r.fonte = "OpenStreetMap (a Routes API da Google não respondeu: " + (e.message || e) + ")";
-    }
+    const r = await rotaOSM(escolha.origem || origem, escolha.destino || destino);
     const km = r.metros / 1000;
     const p = calcularPreco(km);
     ultimo = { origem, destino, km, segundos: r.segundos, preco: p.total, kmExtra: p.extra };
@@ -849,7 +796,7 @@ async function calcular(){
       ? `${eur(CONFIG.PRECO_BASE)} (até ${CONFIG.KM_BASE} km) + ${p.extra.toLocaleString("pt-PT",{maximumFractionDigits:1})} km × ${eur(CONFIG.PRECO_KM_EXTRA)}`
       : `Tarifa mínima até ${CONFIG.KM_BASE} km`;
     $("fonte").textContent = "Distância calculada com " + r.fonte + ".";
-    desenharMapa(r.path);
+    desenharMapa(r);
     $("btnAgendar").disabled = false; $("btnWhats").disabled = false;
   }catch(e){
     mostrar(e.message || "Erro ao calcular o percurso.", "err");
@@ -1760,16 +1707,14 @@ $("fatFicheiros").onchange = fatListar;
 $("fatEnviar").onclick = fatEnviar;
 
 /* ================== DEFINIÇÕES ================== */
-$("btnConfig").onclick = () => { $("cfgKey").value = apiKey(); $("cfgWhats").value = whatsNum();
+$("btnConfig").onclick = () => { $("cfgWhats").value = whatsNum();
   $("cfgScript").value = scriptUrl(); $("cfgToken").value = scriptToken(); $("cfgFolha").value = store.get("cfg_folha", ""); $("dlg").showModal(); };
 $("dlgCancel").onclick = () => $("dlg").close();
 $("dlgSave").onclick = () => {
-  const novaChave = $("cfgKey").value.trim(), mudou = novaChave !== apiKey();
-  store.set("cfg_key", novaChave); store.set("cfg_whats", $("cfgWhats").value.trim());
+  store.set("cfg_whats", $("cfgWhats").value.trim());
   store.set("cfg_script", $("cfgScript").value.trim()); store.set("cfg_token", $("cfgToken").value.trim());
   store.set("cfg_folha", $("cfgFolha").value.trim());
   $("dlg").close();
-  if (mudou) location.reload();
 };
 
 /* ================== ARRANQUE ================== */
@@ -1781,7 +1726,7 @@ $("dlgSave").onclick = () => {
   $("btnCalc").onclick = calcular;
   renderLista();
   renderDash();
-  carregarGoogle();
+  carregarScript(OSM.LEAFLET_JS, () => window.L).catch(() => {});   // prepara o mapa
 })();
 </script>
 </body>
