@@ -137,7 +137,7 @@
   .vazio{text-align:center;padding:30px 10px;color:var(--muted)}
   .switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
   .switch input{width:auto}
-  .dash > *, main > *, #tvConteudo > *, .kpis > *, .grelha2 > *, #tvPainel > *, #tvRegistar > *, #tvLucros > *, #tvDivisao .kpis > *, .row > *{min-width:0}
+  .dash > *, main > *, #tvConteudo > *, .kpis > *, .grelha2 > *, #tvPainel > *, #tvRegistar > *, #tvLucros > *, #tvTransfers > *, #tvDivisao .kpis > *, .row > *{min-width:0}
   #tvRegistar input, #tvRegistar select{min-width:0;max-width:100%}
   .kpi b{white-space:nowrap;font-size:clamp(20px, 2.2vw, 26px)}
   .kpi small{overflow-wrap:anywhere}
@@ -241,6 +241,7 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
     <button class="subtab on" data-sub="tvPainel">📊 Painel</button>
     <button class="subtab" data-sub="tvRegistar">➕ Registar movimento</button>
     <button class="subtab" data-sub="tvLucros">💶 Registar lucro</button>
+    <button class="subtab" data-sub="tvTransfers">🚗 Transfers</button>
   </div>
 
   <div id="tvPainel" style="display:grid;gap:16px">
@@ -441,6 +442,46 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
       </table></div>
       <div class="tabela" id="lcVazio">Ainda não há lucros registados. Carregue em "Atualizar da folha" no Painel se já gravou algum noutro computador.</div>
     </div>
+  </div>
+  <div id="tvTransfers" class="hidden" style="display:grid;gap:16px">
+  <div class="card">
+    <div class="filtros" id="filtros">
+      <button class="chip" data-p="hoje">Hoje</button>
+      <button class="chip" data-p="7">Últimos 7 dias</button>
+      <button class="chip on" data-p="mes">Este mês</button>
+      <button class="chip" data-p="ano">Este ano</button>
+      <button class="chip" data-p="tudo">Tudo</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><span>Valores ganhos</span><b id="kGanhos">0 €</b><small id="kPrevisto"></small></div>
+    <div class="kpi"><span>Viagens feitas</span><b id="kViagens">0</b><small id="kAgendadas"></small></div>
+    <div class="kpi"><span>Km feitos</span><b id="kKms">0 km</b><small id="kMedia"></small></div>
+    <div class="kpi"><span>Clientes</span><b id="kClientes">0</b><small id="kRepetem"></small></div>
+  </div>
+
+  <div class="card">
+    <h2>Clientes que repetem</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Cliente</th><th class="col-tel">Telemóvel</th><th class="n">Viagens</th><th class="n">Km</th><th class="n">Valor</th><th>Última</th></tr></thead>
+        <tbody id="tRepetem"></tbody>
+      </table>
+    </div>
+    <div class="tabela" id="semRepetem">Ainda nenhum cliente repetiu neste período.</div>
+  </div>
+
+  <div class="card">
+    <h2>Todos os clientes</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Cliente</th><th class="col-tel">Telemóvel</th><th class="n">Viagens</th><th class="n">Valor</th></tr></thead>
+        <tbody id="tClientes"></tbody>
+      </table>
+    </div>
+    <div class="tabela">Dados dos agendamentos guardados neste browser (os mesmos da página de agendamento). Valores ganhos, viagens feitas e km contam só as viagens marcadas como <b>concluídas</b> (marque-as na lista de agendamentos depois de cada serviço). Os clientes contam todos os pedidos, exceto os cancelados, e são identificados pelo número de telemóvel.</div>
+  </div>
   </div>
 </section>
 
@@ -1012,7 +1053,8 @@ async function rgAnular(r){
 }
 function rgMostrar(sub){
   document.querySelectorAll("#tvSubtabs .subtab").forEach(b => b.classList.toggle("on", b.dataset.sub === sub));
-  ["tvPainel", "tvRegistar", "tvLucros"].forEach(id => $(id).classList.toggle("hidden", id !== sub));
+  ["tvPainel", "tvRegistar", "tvLucros", "tvTransfers"].forEach(id => $(id).classList.toggle("hidden", id !== sub));
+  if (sub === "tvTransfers") renderTransfers();
   if (sub === "tvLucros") lcAbrir();
   if (sub === "tvRegistar"){
     if (!$("rgData").value) $("rgData").value = hojeISO();
@@ -1170,6 +1212,62 @@ $("lcValor").addEventListener("input", lcPrevia);
 $("lcSugestao").onclick = () => { $("lcValor").value = $("lcSugestao").dataset.v; lcPrevia(); $("lcValor").focus(); };
 ["lcValor", "lcObs"].forEach(id => $(id).addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); lcGravar(); } }));
 $("lcGravar").onclick = () => lcGravar();
+
+/* ================== TRANSFERS (agendamentos guardados neste browser) ================== */
+const ESTADOS_T = { agendada: "Agendada", concluida: "Concluída", cancelada: "Cancelada" };
+const estadoT = a => a.estado || "agendada";
+let periodoT = "mes";
+function noPeriodoT(a){
+  if (periodoT === "tudo") return true;
+  const d = new Date(a.data + "T" + (a.hora || "00:00")), agora = new Date();
+  const ini = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  if (periodoT === "hoje") return d >= ini && d < new Date(ini.getTime() + 864e5);
+  if (periodoT === "7")    return d >= new Date(ini.getTime() - 6 * 864e5) && d < new Date(ini.getTime() + 864e5);
+  if (periodoT === "mes")  return d.getFullYear() === agora.getFullYear() && d.getMonth() === agora.getMonth();
+  if (periodoT === "ano")  return d.getFullYear() === agora.getFullYear();
+  return true;
+}
+// Identifica o cliente pelo telemóvel (últimos 9 dígitos); se não houver, pelo nome
+const chaveClienteT = a => { const t = String(a.tel || "").replace(/\D/g, "").slice(-9); return t || "n:" + String(a.nome || "").trim().toLowerCase(); };
+function renderTransfers(){
+  const lista = store.get("agendamentos", []).filter(noPeriodoT);
+  const feitas = lista.filter(a => estadoT(a) === "concluida"), futuras = lista.filter(a => estadoT(a) === "agendada");
+  const soma = (arr, k) => arr.reduce((s, a) => s + (Number(a[k]) || 0), 0);
+  const ganhos = soma(feitas, "preco"), kms = soma(feitas, "km");
+  $("kGanhos").textContent = eur(ganhos);
+  $("kPrevisto").textContent = futuras.length ? `+ ${eur(soma(futuras, "preco"))} previstos` : "";
+  $("kViagens").textContent = feitas.length;
+  $("kAgendadas").textContent = futuras.length ? `${futuras.length} por realizar` : "";
+  $("kKms").textContent = kmFmt(kms);
+  $("kMedia").textContent = feitas.length ? `${eur(ganhos / Math.max(kms, 0.1))}/km · ${kmFmt(kms / feitas.length)} por viagem` : "";
+  const mapa = new Map();
+  lista.filter(a => estadoT(a) !== "cancelada").forEach(a => {
+    const k = chaveClienteT(a), c = mapa.get(k) || { nome: a.nome, tel: a.tel, viagens: 0, km: 0, valor: 0, ultima: "" };
+    c.viagens++; c.km += Number(a.km) || 0; c.valor += Number(a.preco) || 0;
+    const quando = a.data + "T" + a.hora; if (quando > c.ultima){ c.ultima = quando; c.nome = a.nome; }
+    mapa.set(k, c);
+  });
+  const clientes = [...mapa.values()].sort((x, y) => y.viagens - x.viagens || y.valor - x.valor), repetem = clientes.filter(c => c.viagens > 1);
+  $("kClientes").textContent = clientes.length;
+  $("kRepetem").textContent = clientes.length ? `${repetem.length} repetiram (${Math.round(repetem.length / clientes.length * 100)}%)` : "";
+  const linha = cells => { const tr = document.createElement("tr");
+    cells.forEach(([v, n], i) => { const td = document.createElement("td"); td.textContent = v; if (n) td.className = "n"; if (i === 1) td.classList.add("col-tel"); tr.appendChild(td); }); return tr; };
+  const dataCurta = s => s ? new Date(s).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" }) : "";
+  const tR = $("tRepetem"); tR.innerHTML = "";
+  repetem.forEach(c => tR.appendChild(linha([[c.nome], [c.tel], [c.viagens, 1], [kmFmt(c.km), 1], [eur(c.valor), 1], [dataCurta(c.ultima)]])));
+  $("semRepetem").classList.toggle("hidden", repetem.length > 0);
+  const tC = $("tClientes"); tC.innerHTML = "";
+  if (!clientes.length) tC.appendChild(linha([["Sem clientes neste período."], [""], [""], [""]]));
+  clientes.forEach(c => tC.appendChild(linha([[c.nome], [c.tel], [c.viagens, 1], [eur(c.valor), 1]])));
+}
+$("filtros").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  periodoT = b.dataset.p;
+  document.querySelectorAll("#filtros .chip").forEach(c => c.classList.toggle("on", c === b));
+  renderTransfers();
+});
+window.addEventListener("storage", e => { if (e.key === "agendamentos" && !$("tvTransfers").classList.contains("hidden")) renderTransfers(); });
+if (location.hash === "#transfers") rgMostrar("tvTransfers");
 
 /* ================== ENVIAR FATURAS PARA O GOOGLE DRIVE ================== */
 const FAT = { MAX_MB: 20, MIMES: { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", heic: "image/heic", heif: "image/heif", webp: "image/webp" } };
