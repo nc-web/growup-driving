@@ -180,6 +180,7 @@ function doPost(e) {
     if (p.acao === 'upload') return json_(guardarFatura_(p));
     if (p.acao === 'agendamento') return json_(guardarAgendamento_(p));
     if (p.acao === 'removerAgendamento') return json_(removerAgendamento_(p));
+    if (p.acao === 'listarAgendamentos') return json_(listarAgendamentos_());
     if (p.acao === 'lucro') return json_(registarLucro_(FILE_ID, p));
     if (p.acao === 'anularLucro') return json_(anularLucro_(FILE_ID, p));
     return json_({ erro: 'Ação desconhecida' });
@@ -591,6 +592,13 @@ function removerAgendamento_(p) {
   const i = linhas.findIndex(r => String(r[0]) === id);
   if (i >= 0) sh.deleteRow(i + 2);
   return { ok: true, removido: i >= 0 };
+}
+
+/** Lista completa (com TOKEN) para o separador Transfers do dashboard. */
+function listarAgendamentos_() {
+  return { atualizado: new Date().toISOString(), agendamentos: linhasAgenda_(folhaAgenda_()).filter(r => String(r[0])).map(r => ({
+    id: Number(r[0]), data: String(r[2]), hora: String(r[3]), nome: String(r[5]), tel: String(r[6]), origem: String(r[7]), destino: String(r[8]),
+    km: Number(r[9]) || 0, preco: Number(r[10]) || 0, pax: String(r[11]), malas: String(r[12]), estado: String(r[14]) || 'agendada' })) };
 }
 
 /** Público: o cliente vê só o seu agendamento, pelo código do link. */

@@ -452,6 +452,8 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
       <button class="chip" data-p="ano">Este ano</button>
       <button class="chip" data-p="tudo">Tudo</button>
     </div>
+    <div class="fonte" style="margin-top:12px"><div class="estado" id="trEstado"></div>
+      <div class="botoes"><button class="btn btn-ghost btn-sm" id="trAtualizar">↻ Atualizar da folha</button></div></div>
   </div>
 
   <div class="kpis">
@@ -480,7 +482,7 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
         <tbody id="tClientes"></tbody>
       </table>
     </div>
-    <div class="tabela">Dados dos agendamentos guardados neste browser (os mesmos da página de agendamento). Valores ganhos, viagens feitas e km contam só as viagens marcadas como <b>concluídas</b> (marque-as na lista de agendamentos depois de cada serviço). Os clientes contam todos os pedidos, exceto os cancelados, e são identificados pelo número de telemóvel.</div>
+    <div class="tabela">Os dados vêm da folha "GrowuP Transfers · Agendamentos" no Google Drive (agendamentos confirmados em qualquer computador), juntamente com os que estão guardados neste browser e ainda não foram publicados. Valores ganhos, viagens feitas e km contam só as viagens marcadas como <b>concluídas</b> (marque-as na lista de agendamentos depois de cada serviço). Os clientes contam todos os pedidos, exceto os cancelados, e são identificados pelo número de telemóvel.</div>
   </div>
   </div>
 </section>
@@ -1054,7 +1056,7 @@ async function rgAnular(r){
 function rgMostrar(sub){
   document.querySelectorAll("#tvSubtabs .subtab").forEach(b => b.classList.toggle("on", b.dataset.sub === sub));
   ["tvPainel", "tvRegistar", "tvLucros", "tvTransfers"].forEach(id => $(id).classList.toggle("hidden", id !== sub));
-  if (sub === "tvTransfers") renderTransfers();
+  if (sub === "tvTransfers"){ renderTransfers(); carregarTransfers(); }
   if (sub === "tvLucros") lcAbrir();
   if (sub === "tvRegistar"){
     if (!$("rgData").value) $("rgData").value = hojeISO();
@@ -1229,8 +1231,32 @@ function noPeriodoT(a){
 }
 // Identifica o cliente pelo telemóvel (últimos 9 dígitos); se não houver, pelo nome
 const chaveClienteT = a => { const t = String(a.tel || "").replace(/\D/g, "").slice(-9); return t || "n:" + String(a.nome || "").trim().toLowerCase(); };
+let trFolha = null, trCarregado = 0, trOcupado = false;   // agendamentos lidos da folha Google
+async function carregarTransfers(forcar){
+  if (trOcupado || (!forcar && trFolha && Date.now() - trCarregado < 5 * 60e3)) return;
+  if (!scriptUrl() || !scriptToken()){ $("trEstado").textContent = "Só os agendamentos deste browser. Para ler a folha, configure o código de acesso em ⚙️ Definições."; return; }
+  trOcupado = true; $("trAtualizar").disabled = true; $("trEstado").textContent = "A ler os agendamentos da folha…";
+  try{
+    const j = await rgEnviar({ acao: "listarAgendamentos" });
+    trFolha = j.agendamentos || []; trCarregado = Date.now();
+    renderTransfers();
+  }catch(e){ $("trEstado").textContent = "Não foi possível ler a folha (" + (e.message || e) + "). A mostrar só os agendamentos deste browser."; $("trEstado").style.color = "var(--err)"; }
+  finally{ trOcupado = false; $("trAtualizar").disabled = false; }
+}
+function agendamentosTodos(){
+  const mapa = new Map();
+  store.get("agendamentos", []).forEach(a => mapa.set(String(a.id), a));
+  (trFolha || []).forEach(a => mapa.set(String(a.id), Object.assign({}, mapa.get(String(a.id)) || {}, a)));   // a folha é a referência
+  return [...mapa.values()];
+}
 function renderTransfers(){
-  const lista = store.get("agendamentos", []).filter(noPeriodoT);
+  const todos = agendamentosTodos(), lista = todos.filter(noPeriodoT);
+  const e = $("trEstado"); e.style.color = "";
+  if (trFolha){
+    const locais = todos.length - trFolha.length;
+    e.textContent = `Folha Google: ${trFolha.length} agendamento(s)` + (locais > 0 ? ` + ${locais} só neste browser (por publicar)` : "") +
+      " · lido às " + new Date(trCarregado).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+  }
   const feitas = lista.filter(a => estadoT(a) === "concluida"), futuras = lista.filter(a => estadoT(a) === "agendada");
   const soma = (arr, k) => arr.reduce((s, a) => s + (Number(a[k]) || 0), 0);
   const ganhos = soma(feitas, "preco"), kms = soma(feitas, "km");
@@ -1266,8 +1292,9 @@ $("filtros").addEventListener("click", e => {
   document.querySelectorAll("#filtros .chip").forEach(c => c.classList.toggle("on", c === b));
   renderTransfers();
 });
+$("trAtualizar").onclick = () => carregarTransfers(true);
 window.addEventListener("storage", e => { if (e.key === "agendamentos" && !$("tvTransfers").classList.contains("hidden")) renderTransfers(); });
-if (location.hash === "#transfers") rgMostrar("tvTransfers");
+if (location.hash === "#transfers") setTimeout(() => rgMostrar("tvTransfers"), 0);
 
 /* ================== ENVIAR FATURAS PARA O GOOGLE DRIVE ================== */
 const FAT = { MAX_MB: 20, MIMES: { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", heic: "image/heic", heif: "image/heif", webp: "image/webp" } };
