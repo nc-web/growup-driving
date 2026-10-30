@@ -615,6 +615,20 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
   </div>
 </dialog>
 
+<dialog id="dlgCodigo">
+  <h2 style="margin-top:0">Código de acesso</h2>
+  <p class="tabela" style="margin-top:0">Para publicar os agendamentos (link do cliente e horários ocupados), cole o código de acesso. Só é pedido uma vez neste browser.</p>
+  <div class="field">
+    <label for="codigoInput">Código de acesso</label>
+    <input id="codigoInput" type="password" autocomplete="off" placeholder="gu-...">
+    <div class="msg" id="codigoMsg"></div>
+  </div>
+  <div class="row">
+    <button class="btn btn-ghost" id="codigoCancelar">Agora não</button>
+    <button class="btn btn-accent" id="codigoGuardar">Guardar e publicar</button>
+  </div>
+</dialog>
+
 <dialog id="dlg">
   <h2 style="margin-top:0">Definições</h2>
   <div class="field">
@@ -626,7 +640,7 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
     <input id="cfgScript" placeholder="https://script.google.com/macros/s/.../exec">
   </div>
   <div class="field">
-    <label for="cfgToken">Token de acesso</label>
+    <label for="cfgToken">Código de acesso</label>
     <input id="cfgToken" placeholder="gu-...">
     <div class="tabela">O token tem de ser igual ao que está no script. A folha continua privada.</div>
   </div>
@@ -840,14 +854,23 @@ async function enviarAgenda(corpo){
   if (j.erro) throw new Error(j.erro);
   return j;
 }
+function pedirCodigo(msg){
+  $("codigoInput").value = ""; const m = $("codigoMsg"); m.textContent = msg || ""; m.className = "msg" + (msg ? " err" : "");
+  if (!$("dlgCodigo").open) $("dlgCodigo").showModal();
+  $("codigoInput").focus();
+}
 async function sincronizar(a, avisar){
+  if (!scriptToken()){ if (avisar){ mostrar("Agendamento guardado. Falta o código de acesso para o publicar para o cliente.", "err"); pedirCodigo(); } return; }
   const campos = ["id", "data", "hora", "nome", "tel", "origem", "destino", "km", "segundos", "preco", "pax", "malas", "notas", "estado"];
   const dados = {}; campos.forEach(k => dados[k] = a[k]); dados.estado = estadoDe(a);
   try{
     const r = await enviarAgenda({ acao: "agendamento", agendamento: dados });
     const x = agendamentos.find(y => y.id === a.id); if (x){ x.codigo = r.codigo; guardar(); }
     if (avisar) mostrar(`Agendamento publicado. O cliente já o pode ver no link (botão "🔗 Copiar link do cliente") e o horário aparece como ocupado.`, "ok");
-  }catch(e){ if (avisar) mostrar("Guardado neste computador, mas não foi publicado para o cliente: " + e.message, "err"); }
+  }catch(e){
+    if (/token/i.test(e.message || "")){ store.set("cfg_token", ""); if (avisar) pedirCodigo("O código de acesso não está correto. Confirme e cole outra vez."); return; }
+    if (avisar) mostrar("Guardado neste computador, mas não foi publicado para o cliente: " + e.message, "err");
+  }
 }
 const linkCliente = a => RESERVA_URL + "?c=" + encodeURIComponent(a.codigo);
 async function copiarLinkCliente(a){
@@ -862,6 +885,7 @@ function enviarLinkCliente(a){
   window.open(`https://wa.me/${n}?text=${encodeURIComponent(txt)}`, "_blank", "noopener");
 }
 async function sincronizarTodos(){
+  if (!scriptToken()) return pedirCodigo();
   const falta = agendamentos.filter(a => !a.codigo && new Date(a.data + "T" + a.hora) >= new Date(Date.now() - 864e5));
   if (!falta.length){ mostrar("Todos os agendamentos futuros já estão publicados para os clientes.", "ok"); return; }
   mostrar(`A publicar ${falta.length} agendamento(s)…`, "ok");
@@ -870,6 +894,14 @@ async function sincronizarTodos(){
   mostrar(ainda ? `${ainda} agendamento(s) não foram publicados. Confirme o código de acesso em ⚙️ Definições.` : "Agendamentos publicados para os clientes.", ainda ? "err" : "ok");
 }
 $("btnSync").onclick = sincronizarTodos;
+$("codigoCancelar").onclick = () => $("dlgCodigo").close();
+$("codigoGuardar").onclick = async () => {
+  const c = $("codigoInput").value.trim(); if (!c) return pedirCodigo("Cole o código de acesso.");
+  store.set("cfg_token", c); $("dlgCodigo").close();
+  await sincronizarTodos();
+  if (!scriptToken()) pedirCodigo("O código de acesso não está correto. Confirme e cole outra vez.");
+};
+$("codigoInput").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); $("codigoGuardar").click(); } });
 
 /* ================== AGENDAMENTOS ================== */
 let agendamentos = store.get("agendamentos", []);
