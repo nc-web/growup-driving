@@ -1,0 +1,1738 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a1d25">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<title>Agendar Transfer</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+    --brand:#0f172a; --accent:#f59e0b; --ok:#16a34a; --err:#dc2626; --soft:#f8fafc;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b1120; --card:#111827; --ink:#f1f5f9; --muted:#94a3b8; --line:#1f2937;
+      --brand:#f1f5f9; --soft:#0f172a;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{background:#0f172a;color:#fff;padding:20px 16px 56px}
+  header .wrap{max-width:960px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  header h1{margin:0;font-size:22px;letter-spacing:.2px}
+  header p{margin:4px 0 0;color:#cbd5e1;font-size:14px}
+  .icon-btn{background:rgba(255,255,255,.1);border:0;color:#fff;border-radius:10px;padding:10px 12px;cursor:pointer;font-size:14px}
+  main{max-width:960px;margin:-40px auto 40px;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:860px){main{grid-template-columns:1.1fr .9fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 6px 24px rgba(15,23,42,.06)}
+  h2{font-size:16px;margin:0 0 14px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+  .row{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
+  .field{margin-bottom:14px;position:relative}
+  input,textarea,select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--soft);color:var(--ink);font:inherit}
+  input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+  textarea{resize:vertical;min-height:70px}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .a{background:var(--ok)} .b{background:var(--err)}
+  .suggest{position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-top:4px;box-shadow:0 10px 30px rgba(0,0,0,.12);overflow:hidden;display:none}
+  .suggest div{padding:10px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--line)}
+  .suggest div:last-child{border-bottom:0}
+  .suggest div:hover,.suggest div.active{background:var(--soft)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:0;border-radius:12px;font:600 16px system-ui;cursor:pointer}
+  .btn-dark{background:#0f172a;color:#fff}
+  .btn-accent{background:var(--accent);color:#111}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  #map{height:240px;border-radius:12px;background:var(--soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;text-align:center;padding:12px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+  .stat{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .stat span{display:block;font-size:12px;color:var(--muted)}
+  .stat b{font-size:20px}
+  .price{background:#0f172a;color:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
+  .price .total{font-size:34px;font-weight:800;color:var(--accent)}
+  .price small{color:#cbd5e1;display:block;margin-top:4px;font-size:13px}
+  .msg{font-size:14px;padding:10px 12px;border-radius:10px;margin-top:10px;display:none}
+  .msg.err{display:block;background:#fee2e2;color:#991b1b}
+  .msg.ok{display:block;background:#dcfce7;color:#166534}
+  .list{margin-top:6px}
+  .booking{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;font-size:14px}
+  .booking .top{display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px}
+  .booking .muted{color:var(--muted)}
+  .booking button{background:none;border:0;color:var(--err);cursor:pointer;font-size:13px;padding:0;margin-top:6px}
+  .tabela{font-size:13px;color:var(--muted);margin-top:10px}
+  dialog{border:0;border-radius:16px;padding:20px;max-width:440px;width:calc(100% - 32px);background:var(--card);color:var(--ink)}
+  dialog::backdrop{background:rgba(0,0,0,.5)}
+  .gap{display:grid;gap:10px}
+  .tabs{max-width:960px;margin:14px auto 0;display:flex;gap:8px}
+  .tab{background:rgba(255,255,255,.08);color:#cbd5e1;border:0;border-radius:999px;padding:8px 16px;font:600 14px system-ui;cursor:pointer}
+  .tab.on{background:var(--accent);color:#111}
+  .hidden{display:none !important}
+  .dash{max-width:960px;margin:-40px auto 40px;padding:0 16px;display:grid;gap:16px}
+  .filtros{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;font:600 13px system-ui;cursor:pointer}
+  .chip.on{background:#0f172a;color:#fff;border-color:#0f172a}
+  .kpis{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+  @media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .kpi span{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .kpi b{display:block;font-size:28px;margin-top:4px;font-variant-numeric:tabular-nums}
+  .kpi small{color:var(--muted);font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle}
+  .t-agendada{background:#fef3c7;color:#92400e}
+  .t-concluida{background:#dcfce7;color:#166534}
+  .t-cancelada{background:#f1f5f9;color:#64748b}
+  .acoes{display:flex;gap:14px;margin-top:6px}
+  .acoes button{color:var(--ink)!important;text-decoration:underline}
+  .acoes button.rm{color:var(--err)!important}
+  .tbl-wrap{overflow-x:auto}
+  .fatlista{display:grid;gap:6px;margin:4px 0 14px}
+  .fatlista div{display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:14px;min-width:0}
+  .fatlista .nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .fatlista .est{flex:none;font-size:13px;color:var(--muted)}
+  .fatlista .est.ok{color:var(--ok)} .fatlista .est.err{color:var(--err)}
+  .fatlista a{color:inherit}
+
+  .subtabs{display:flex;gap:8px;flex-wrap:wrap}
+  .subtab{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px 16px;font:600 15px system-ui;cursor:pointer}
+  .subtab.on{background:var(--accent);color:#111;border-color:var(--accent)}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:14px}
+  .seg button{border:0;background:var(--soft);color:var(--ink);padding:12px;font:600 15px system-ui;cursor:pointer}
+  .seg button.on[data-tipo="Entrada"]{background:var(--s1);color:#fff}
+  .seg button.on[data-tipo="Saída"]{background:var(--s2);color:#fff}
+  .kpis.k3{grid-template-columns:1fr}
+  @media(min-width:760px){.kpis.k3{grid-template-columns:repeat(3,1fr)}}
+  .socio{display:flex;align-items:center;gap:8px}
+  .socio i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+  .lc-sem{font-size:13px;color:var(--muted);margin-top:4px}
+  .previa{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;margin:4px 0 14px}
+  .previa div{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+  .previa span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .previa b{display:block;font-size:14px;overflow-wrap:anywhere}
+  .previa .auto span::after{content:" · auto";color:var(--ok);text-transform:none;letter-spacing:0}
+
+  :root{ --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#6250d6; --ref:#64748b; --grid:#e8eaee; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#9085e9; --ref:#94a3b8; --grid:#1f2937; } }
+  :root[data-theme="dark"]{ --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#9085e9; --ref:#94a3b8; --grid:#1f2937; }
+  .fonte{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+  .fonte .estado{font-size:14px;color:var(--muted)}
+  .fonte .botoes{display:flex;gap:8px;flex-wrap:wrap}
+  .btn-sm{width:auto;padding:0 14px;height:40px;font-size:14px;border-radius:10px}
+  .grafico{position:relative;height:300px}
+  .grafico.h{height:auto;min-height:180px}
+  .grelha2{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:860px){.grelha2{grid-template-columns:1fr 1fr}}
+  .kpis.k5{grid-template-columns:repeat(2,1fr)}
+  @media(min-width:760px){.kpis.k5{grid-template-columns:repeat(5,1fr)}}
+  .pos{color:var(--ok)} .neg{color:var(--err)}
+  .aviso{font-size:13px;background:#fef3c7;color:#92400e;border-radius:10px;padding:10px 12px;margin-top:12px}
+  .vazio{text-align:center;padding:30px 10px;color:var(--muted)}
+  .switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
+  .switch input{width:auto}
+  .dash > *, main > *, #tvConteudo > *, .kpis > *, .grelha2 > *, #tvPainel > *, #tvRegistar > *, #tvLucros > *, #tvDivisao .kpis > *, .row > *{min-width:0}
+  #tvRegistar input, #tvRegistar select{min-width:0;max-width:100%}
+  .kpi b{white-space:nowrap;font-size:clamp(20px, 2.2vw, 26px)}
+  .kpi small{overflow-wrap:anywhere}
+  @media(max-width:560px){ .col-tel{display:none} }
+
+  /* ===== Identidade GrowuP Driving (cartão de visita) ===== */
+  :root, :root:not([data-theme="light"]){
+    --red:#e31b2b; --red-2:#c8141f; --red-3:#a50f18; --red-hi:#f0404b;
+    --bg:#15181f; --card:#1c2029; --ink:#f3f4f6; --muted:#a3aab8; --line:#2c323e;
+    --brand:#f3f4f6; --accent:#e31b2b; --ok:#22c55e; --err:#f05252; --soft:#232833;
+    --s1:#e31b2b; --s2:#9aa4b6; --s3:#22c55e; --s4:#f5a524; --ref:#7d8696; --grid:#2a303b;
+    --stripes:repeating-linear-gradient(135deg, rgba(255,255,255,.028) 0 2px, transparent 2px 14px);
+    color-scheme: dark;
+  }
+  body{background:var(--bg) var(--stripes);font-family:"Montserrat",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  button, input, select, textarea, .btn, .tab, .subtab, .chip, .seg button{font-family:"Montserrat",system-ui,sans-serif!important}
+  header{position:relative;overflow:hidden;background:#1a1d25 var(--stripes);padding:22px 16px 60px;border-bottom:3px solid var(--red)}
+  header .wrap, header .tabs{position:relative;z-index:2}
+  header .facetas{position:absolute;right:0;top:0;height:100%;width:min(34vw,380px);z-index:1;pointer-events:none}
+  header .facetas svg{height:100%;width:100%;display:block}
+  @media(max-width:700px){ header .facetas{width:120px;opacity:.55} }
+  .marca{display:flex;align-items:center;gap:14px}
+  .marca .logo{width:54px;height:54px;flex:none}
+  .marca .wm{line-height:1}
+  .marca .wm b{display:block;font-size:30px;font-weight:800;letter-spacing:-.5px;color:#fff}
+  .marca .wm b em{font-style:normal;color:var(--red)}
+  .marca .wm span{display:block;font-size:11px;font-weight:600;letter-spacing:.55em;color:#fff;margin-top:5px}
+  header .titulo{margin-top:14px;padding-left:2px}
+  header .titulo h1{font-size:15px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;color:#d4d8e0;margin:0}
+  header .titulo h1::before{content:"";display:block;width:56px;height:3px;background:var(--red);margin:0 0 12px}
+  header p, header .atualizacao{color:#a3aab8!important;font-size:13px}
+  .icon-btn{background:rgba(255,255,255,.06);border:1px solid #343b48;border-radius:10px}
+  .icon-btn:hover{border-color:var(--red)}
+  .card, .kpi, dialog{background:var(--card);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .card{border-top:3px solid var(--red)}
+  h2{color:#fff;letter-spacing:.22em;font-weight:700;font-size:14px}
+  h2::after{content:"";display:block;width:40px;height:2px;background:var(--red);margin-top:8px}
+  .kpi span, th{letter-spacing:.14em;color:var(--muted)}
+  .kpi b{color:#fff}
+  .kpi b.pos{color:var(--ok)} .kpi b.neg{color:var(--err)}
+  input, textarea, select{background:var(--soft);border-color:var(--line);color:var(--ink)}
+  input:focus, textarea:focus, select:focus{outline:2px solid var(--red)}
+  input[type=date]{color-scheme:dark}
+  .btn{border-radius:10px;font-weight:700;letter-spacing:.04em}
+  .btn-accent{background:var(--red);color:#fff}
+  .btn-accent:hover:not(:disabled){background:var(--red-hi)}
+  .btn-dark{background:#2a303b;color:#fff;border:1px solid #3a4250}
+  .btn-dark:hover:not(:disabled){border-color:var(--red)}
+  .btn-ghost{border-color:#3a4250;color:var(--ink)}
+  .btn-ghost:hover:not(:disabled){border-color:var(--red)}
+  .tab{background:rgba(255,255,255,.05);color:#d4d8e0;border:1px solid #343b48;letter-spacing:.06em}
+  .tab.on, .subtab.on{background:var(--red);color:#fff;border-color:var(--red)}
+  .subtab{background:var(--card);color:var(--ink);border-color:var(--line);letter-spacing:.04em}
+  .subtab:hover, .chip:hover, .tab:hover{border-color:var(--red)}
+  .chip{background:var(--soft);color:var(--ink);border-color:var(--line)}
+  .chip.on{background:var(--red);color:#fff;border-color:var(--red)}
+  .price{background:linear-gradient(135deg,#232833,#1a1d25);border:1px solid var(--line);border-left:4px solid var(--red)}
+  .price .total{color:#fff}
+  .stat, .previa div, .fatlista div{background:var(--soft);border-color:var(--line)}
+  .booking{border-color:var(--line);background:var(--soft)}
+  .suggest{background:var(--card);border-color:var(--line)}
+  .seg{border-color:var(--line)}
+  .seg button{background:var(--soft);color:var(--ink)}
+  .seg button.on[data-tipo="Entrada"]{background:var(--red);color:#fff}
+  .seg button.on[data-tipo="Saída"]{background:#4a5263;color:#fff}
+  .msg.err{background:rgba(240,82,82,.14);color:#ffb4b4}
+  .msg.ok{background:rgba(34,197,94,.14);color:#a7f3c0}
+  .aviso{background:rgba(245,165,36,.13);color:#fcd38a}
+  .t-agendada{background:rgba(245,165,36,.16);color:#fcd38a}
+  .t-concluida{background:rgba(34,197,94,.16);color:#a7f3c0}
+  .t-cancelada{background:#2a303b;color:#a3aab8}
+  .acoes button{color:var(--ink)!important}
+  a{color:#ff6b74}
+  dialog::backdrop{background:rgba(5,6,10,.7)}
+  #map{background:var(--soft);border-color:var(--line)}
+  main, .dash{position:relative;z-index:3}
+  .acoes{flex-wrap:wrap;row-gap:6px}
+  .acoes button.cal{color:#ff8a92!important;text-decoration:none!important;font-weight:600}
+  .rodape-marca{max-width:960px;margin:0 auto 32px;padding:0 16px;color:#7d8696;font-size:11px;letter-spacing:.32em;text-align:center;text-transform:uppercase}
+  .rodape-marca b{color:#c2c7d0;font-weight:600}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="facetas" aria-hidden="true"><svg viewBox="0 0 380 200" preserveAspectRatio="none"><polygon points="70,0 380,0 380,200 70,200 130,100" fill="#c8141f"/><polygon points="120,0 380,0 250,70" fill="#e31b2b"/><polygon points="250,70 380,0 380,110" fill="#a50f18"/><polygon points="130,100 250,70 300,120" fill="#f0404b"/><polygon points="130,100 300,120 380,110 380,200 200,200" fill="#d4161f"/><polygon points="200,200 380,200 380,150" fill="#9b0e16"/><polygon points="58,0 66,0 126,100 66,200 58,200 118,100" fill="#e31b2b"/></svg></div>
+  <div class="wrap">
+    <div>
+      <div class="marca"><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="#e31b2b" stroke-width="7"/><path d="M22 80 C34 70 44 56 56 42 L66 31" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/><path d="M25 77 C36 68 45 56 56 43 L63 35" fill="none" stroke="#1a1d25" stroke-width="2" stroke-dasharray="5 4"/><path d="M58 24 L80 18 L74 40 Z" fill="#e31b2b"/></svg><div class="wm"><b>Grow<em>uP</em></b><span>DRIVING</span></div></div>
+      <div class="titulo"><h1>Transfers · Agendamento de viagens</h1><p>Agende o seu transfer ou viagem privada</p></div>
+    </div>
+    <button class="icon-btn" id="btnConfig" title="Definições">⚙️ Definições</button>
+  </div>
+  <nav class="tabs">
+    <button class="tab on" data-view="viewAgendar">Agendar</button>
+    <button class="tab" data-view="viewDash">Transfers</button>
+    <button class="tab" data-view="viewTvde">Dashboard TVDE</button>
+  </nav>
+</header>
+
+<main id="viewAgendar">
+  <!-- FORMULÁRIO -->
+  <section class="card">
+    <h2>Dados da viagem</h2>
+    <div class="row">
+      <div class="field">
+        <label for="data">Dia</label>
+        <input type="date" id="data" required>
+      </div>
+      <div class="field">
+        <label for="hora">Hora</label>
+        <input type="time" id="hora" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="origem"><span class="dot a"></span>Local de recolha (ponto A)</label>
+      <input id="origem" autocomplete="off" placeholder="Ex.: Aeroporto Humberto Delgado, Lisboa">
+      <div class="suggest" id="sug-origem"></div>
+    </div>
+
+    <div class="field">
+      <label for="destino"><span class="dot b"></span>Local de chegada (ponto B)</label>
+      <input id="destino" autocomplete="off" placeholder="Ex.: Rua Augusta 100, Lisboa">
+      <div class="suggest" id="sug-destino"></div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="nome">Nome</label>
+        <input id="nome" placeholder="Nome do cliente">
+      </div>
+      <div class="field">
+        <label for="tel">Telemóvel</label>
+        <input id="tel" type="tel" placeholder="+351 9xx xxx xxx">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="pax">Passageiros</label>
+        <select id="pax"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+      </div>
+      <div class="field">
+        <label for="malas">Malas</label>
+        <select id="malas"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="notas">Observações</label>
+      <textarea id="notas" placeholder="Nº de voo, cadeira de criança, etc."></textarea>
+    </div>
+
+    <button class="btn btn-dark" id="btnCalc">Calcular distância e preço</button>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <!-- RESULTADO -->
+  <section class="gap">
+    <div class="card">
+      <h2>Percurso</h2>
+      <div id="map">O mapa aparece aqui depois de calcular o percurso.</div>
+      <div class="stats">
+        <div class="stat"><span>Distância</span><b id="kms">–</b></div>
+        <div class="stat"><span>Duração</span><b id="dur">–</b></div>
+        <div class="stat"><span>Km extra</span><b id="extra">–</b></div>
+      </div>
+      <div class="price">
+        <div>Preço estimado</div>
+        <div class="total" id="total">– €</div>
+        <small id="detalhe">Até 5 km: 5,00 € · cada km a mais: +0,60 €</small>
+      </div>
+      <div class="gap">
+        <button class="btn btn-accent" id="btnAgendar" disabled>Confirmar agendamento</button>
+        <button class="btn btn-ghost" id="btnWhats" disabled>Enviar por WhatsApp</button>
+      </div>
+      <div class="tabela" id="fonte"></div>
+    </div>
+
+    <div class="card">
+      <h2>Agendamentos</h2>
+      <div class="list" id="lista"><div class="tabela">Ainda sem agendamentos.</div></div>
+    </div>
+  </section>
+</main>
+
+<section class="dash hidden" id="viewDash">
+  <div class="card">
+    <div class="filtros" id="filtros">
+      <button class="chip" data-p="hoje">Hoje</button>
+      <button class="chip" data-p="7">Últimos 7 dias</button>
+      <button class="chip on" data-p="mes">Este mês</button>
+      <button class="chip" data-p="ano">Este ano</button>
+      <button class="chip" data-p="tudo">Tudo</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><span>Valores ganhos</span><b id="kGanhos">0 €</b><small id="kPrevisto"></small></div>
+    <div class="kpi"><span>Viagens feitas</span><b id="kViagens">0</b><small id="kAgendadas"></small></div>
+    <div class="kpi"><span>Km feitos</span><b id="kKms">0 km</b><small id="kMedia"></small></div>
+    <div class="kpi"><span>Clientes</span><b id="kClientes">0</b><small id="kRepetem"></small></div>
+  </div>
+
+  <div class="card">
+    <h2>Clientes que repetem</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Cliente</th><th class="col-tel">Telemóvel</th><th class="n">Viagens</th><th class="n">Km</th><th class="n">Valor</th><th>Última</th></tr></thead>
+        <tbody id="tRepetem"></tbody>
+      </table>
+    </div>
+    <div class="tabela" id="semRepetem">Ainda nenhum cliente repetiu neste período.</div>
+  </div>
+
+  <div class="card">
+    <h2>Todos os clientes</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Cliente</th><th class="col-tel">Telemóvel</th><th class="n">Viagens</th><th class="n">Valor</th></tr></thead>
+        <tbody id="tClientes"></tbody>
+      </table>
+    </div>
+    <div class="tabela">Valores ganhos, viagens feitas e km contam só as viagens marcadas como <b>concluídas</b> (marque-as na lista de agendamentos depois de cada serviço). Os clientes contam todos os pedidos, exceto os cancelados, e são identificados pelo número de telemóvel.</div>
+  </div>
+</section>
+
+<section class="dash hidden" id="viewTvde">
+  <div class="subtabs" id="tvSubtabs">
+    <button class="subtab on" data-sub="tvPainel">📊 Painel</button>
+    <button class="subtab" data-sub="tvRegistar">➕ Registar movimento</button>
+    <button class="subtab" data-sub="tvLucros">💶 Registar lucro</button>
+  </div>
+
+  <div id="tvPainel" style="display:grid;gap:16px">
+  <div class="card">
+    <div class="fonte">
+      <div class="estado" id="tvEstado">Sem dados carregados.</div>
+      <div class="botoes">
+        <button class="btn btn-ghost btn-sm" id="tvFatura" title="Enviar uma fatura (PDF ou foto) para a pasta Faturas no Google Drive">📎 Enviar fatura</button>
+        <a class="btn btn-ghost btn-sm" id="tvAbrirFolha" href="https://docs.google.com/spreadsheets/d/1LaHM73lnQn8dH1PfJuGDiKpmqe9YoJh2/edit" target="_blank" rel="noopener" title="Abre a folha no Google Drive (pede login Google se for preciso)" style="text-decoration:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.7 3h8.6l6 10.4-4.3 7.6H6l-4.3-7.6L7.7 3zm1.2 2L4 13.4l2.4 4.1 4.9-8.5L8.9 5zm2.4 6-3.6 6.3h9.1l3.6-6.3h-9.1zm1-2h8.7L16.3 5h-7.1l2.1 4z"/></svg>
+          Abrir folha no Google Drive</a>
+        <button class="btn btn-ghost btn-sm" id="tvLogin" title="Entrar com a sua conta Google para ler a folha da sua Google Drive"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.2z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.8 6.1C6.6 42.6 14.6 48 24 48z"/></svg> <span id="tvLoginTxt">Entrar com Google</span></button>
+        <button class="btn btn-dark btn-sm" id="tvAtualizar">↻ Atualizar da folha</button>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer">📂 Importar Excel<input type="file" id="tvFicheiro" accept=".xlsx,.xls" hidden></label>
+      </div>
+    </div>
+    <div class="filtros" id="tvViaturas" style="margin-top:14px"></div>
+    <div class="filtros" id="tvPeriodos" style="margin-top:8px">
+      <button class="chip on" data-p="12">Últimas 12 semanas</button>
+      <button class="chip" data-p="26">Últimas 26 semanas</button>
+      <button class="chip" data-p="ano">Este ano</button>
+      <button class="chip" data-p="anoant">Ano passado</button>
+      <button class="chip" data-p="tudo">Tudo</button>
+    </div>
+    <div style="margin-top:12px"><label class="switch"><input type="checkbox" id="tvInvest"> Incluir compra de viaturas nas despesas</label></div>
+    <div class="aviso hidden" id="tvAviso"></div>
+  </div>
+
+  <div id="tvConteudo" class="hidden" style="display:grid;gap:16px">
+    <div class="kpis k5">
+      <div class="kpi"><span>Receita</span><b id="tvReceita">–</b><small id="tvReceitaSem"></small></div>
+      <div class="kpi"><span>Despesas</span><b id="tvDespesa">–</b><small id="tvDespesaSem"></small></div>
+      <div class="kpi"><span>Lucro</span><b id="tvLucro">–</b><small id="tvMargem"></small></div>
+      <div class="kpi"><span>Despesa / receita</span><b id="tvRacio">–</b><small>por cada 1 € ganho</small></div>
+      <div class="kpi"><span>Melhor semana</span><b id="tvMelhor">–</b><small id="tvMelhorData"></small></div>
+    </div>
+
+    <div class="card" id="tvDivisao">
+      <h2>Divisão do lucro · 50% / 50%</h2>
+      <div class="kpis k3">
+        <div class="kpi"><span>Lucro a dividir</span><b id="dvTotal">–</b><small id="dvFonte"></small></div>
+        <div class="kpi"><span class="socio"><i style="background:var(--s1)"></i>Nuno Cardoso (Off) · 50%</span><b id="dvNuno">–</b><small id="dvNunoSem"></small></div>
+        <div class="kpi"><span class="socio"><i style="background:var(--s4)"></i>Bruno Pinto (bp) · 50%</span><b id="dvBruno">–</b><small id="dvBrunoSem"></small></div>
+      </div>
+      <h2 style="margin-top:18px;font-size:15px">Quem recebeu e quem pagou (coluna QUEM)</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Pessoa</th><th class="n">Recebeu</th><th class="n">Pagou</th><th class="n">Ficou com</th><th class="n">Parte (50%)</th></tr></thead>
+        <tbody id="dvTabQuem"></tbody>
+      </table></div>
+      <div class="tabela" id="dvAcerto"></div>
+      <h2 style="margin-top:18px;font-size:15px">Por semana</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Semana</th><th class="n">Lucro calculado</th><th class="n">Lucro registado</th><th class="n">Nuno Cardoso</th><th class="n">Bruno Pinto</th></tr></thead>
+        <tbody id="dvTabSemanas"></tbody>
+      </table></div>
+      <div class="tabela">Quando há um lucro registado para a semana (aba <b>"Lucros Semanais"</b>), a divisão usa esse valor; senão usa o lucro calculado (receitas − despesas, sem compra de viaturas).</div>
+    </div>
+
+    <div class="card">
+      <h2>Receita vs despesa por semana</h2>
+      <div class="grafico"><canvas id="chSemanas" aria-label="Receita, despesa e lucro por semana"></canvas></div>
+    </div>
+
+    <div class="grelha2">
+      <div class="card">
+        <h2>Receita por semana</h2>
+        <div class="grafico"><canvas id="chReceita" aria-label="Receita por semana"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Despesas por semana</h2>
+        <div class="grafico"><canvas id="chDespesa" aria-label="Despesas por semana"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Despesa / receita por semana</h2>
+      <div class="grafico"><canvas id="chRacio" aria-label="Percentagem da receita gasta em despesas, por semana"></canvas></div>
+      <div class="tabela">Percentagem da receita de cada semana que foi gasta em despesas. Quanto mais baixo, melhor. Semanas sem receita ficam em branco.</div>
+    </div>
+
+    <div class="grelha2">
+      <div class="card">
+        <h2>Despesas por categoria</h2>
+        <div class="grafico h"><canvas id="chCategorias" aria-label="Despesas por categoria"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Receita por origem</h2>
+        <div class="grafico h"><canvas id="chOrigens" aria-label="Receita por origem"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card" id="tvCardViaturas">
+      <h2>Comparação por viatura</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Viatura</th><th class="n">Receita</th><th class="n">Despesas</th><th class="n">Lucro</th><th class="n">Margem</th></tr></thead>
+        <tbody id="tvTabViaturas"></tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <h2>Semana a semana</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Semana</th><th class="n">Receita</th><th class="n">Despesas</th><th class="n">Lucro</th><th class="n">Desp./rec.</th></tr></thead>
+        <tbody id="tvTabSemanas"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="card vazio" id="tvVazio">
+    <p><b>Ainda sem dados TVDE.</b></p>
+    <p>Carregue em <b>Atualizar da folha</b> para ler a folha "GrowuP Driving.xlsx" no Google Drive,<br>ou em <b>Importar Excel</b> para escolher um ficheiro.</p>
+  </div>
+  </div>
+
+  <div id="tvRegistar" class="hidden" style="display:grid;gap:16px">
+    <div class="card">
+      <h2>Registar movimento · Tesla 3</h2>
+      <div class="seg" id="rgTipo" role="radiogroup" aria-label="Tipo de movimento">
+        <button type="button" data-tipo="Entrada" class="on" role="radio" aria-checked="true">↑ Entrada (receita)</button>
+        <button type="button" data-tipo="Saída" role="radio" aria-checked="false">↓ Saída (despesa)</button>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="rgDesc">Descrição</label>
+          <input id="rgDesc" list="rgListaDesc" maxlength="100" placeholder="Ex.: UBER, BOLT, PRIVADO, COMBUSTIVEL" autocomplete="off">
+          <datalist id="rgListaDesc"></datalist>
+        </div>
+        <div class="field">
+          <label for="rgValor">Valor (€)</label>
+          <input id="rgValor" type="number" inputmode="decimal" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="rgData">Data</label>
+          <input id="rgData" type="date">
+        </div>
+        <div class="field">
+          <label for="rgQuem">Quem pagou/recebeu?</label>
+          <select id="rgQuem"><option>Off</option><option>bp</option><option>Helder</option><option>PRIVADOS</option></select>
+        </div>
+      </div>
+      <div class="aviso hidden" id="rgAvisoGoogle" style="margin:0 0 12px">⚠️ Os movimentos são gravados na folha principal (GrowuP Driving.xlsx ligada ao código de acesso), não na folha da conta Google com que entrou.</div>
+      <div class="tabela" style="margin:0 0 6px">O que vai ser escrito na folha:</div>
+      <div class="previa" id="rgPrevia"></div>
+      <button class="btn btn-accent" id="rgGravar">Gravar na folha</button>
+      <div class="msg" id="rgMsg"></div>
+      <div class="tabela" id="rgNota">Grava na aba <b>"Entradas e Saídas - Tesla 3"</b> do ficheiro GrowuP Driving.xlsx, na primeira linha livre a seguir ao último registo. SEMANA, DATA, TIPO, MÊS e ANO são preenchidos automaticamente e as saídas ficam com "-" no valor. Para evitar conflitos, não tenha o ficheiro aberto a ser editado no Google Sheets ou no Excel enquanto grava.</div>
+    </div>
+
+    <div class="card">
+      <h2>Gravados neste dispositivo</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Linha</th><th>Data</th><th>Tipo</th><th>Descrição</th><th class="n">Valor</th><th></th></tr></thead>
+        <tbody id="rgLista"></tbody>
+      </table></div>
+      <div class="tabela" id="rgVazio">Ainda não gravou nenhum movimento a partir daqui.</div>
+    </div>
+  </div>
+  <div id="tvLucros" class="hidden" style="display:grid;gap:16px">
+    <div class="card">
+      <h2>Registar lucro da semana</h2>
+      <div class="row">
+        <div class="field">
+          <label for="lcSemana">Semana (escolha qualquer dia da semana)</label>
+          <input id="lcSemana" type="date">
+          <div class="lc-sem" id="lcSemanaTxt"></div>
+        </div>
+        <div class="field">
+          <label for="lcValor">Valor ganho na semana (€)</label>
+          <input id="lcValor" type="number" inputmode="decimal" step="0.01" placeholder="0,00">
+          <div class="lc-sem"><button type="button" class="btn btn-ghost btn-sm" id="lcSugestao" style="height:30px" hidden></button></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="lcObs">Observações (opcional)</label>
+        <input id="lcObs" maxlength="200" placeholder="Ex.: inclui transfer do aeroporto">
+      </div>
+      <div class="aviso hidden" id="lcAvisoGoogle" style="margin:0 0 12px">⚠️ O lucro é gravado na folha principal (GrowuP Driving.xlsx ligada ao código de acesso), não na folha da conta Google com que entrou.</div>
+      <div class="tabela" style="margin:0 0 6px">O que vai ser escrito na aba "Lucros Semanais":</div>
+      <div class="previa" id="lcPrevia"></div>
+      <button class="btn btn-accent" id="lcGravar">Gravar lucro na folha</button>
+      <div class="msg" id="lcMsg"></div>
+      <div class="tabela">Grava na aba <b>"Lucros Semanais"</b> do ficheiro GrowuP Driving.xlsx (é criada automaticamente na primeira vez). Cada semana tem uma linha: se já existir, pergunta se quer substituir. As colunas NUNO CARDOSO e BRUNO PINTO ficam com fórmulas de 50% do valor ganho.</div>
+    </div>
+
+    <div class="card">
+      <h2>Lucros registados na folha</h2>
+      <div class="kpis k3" style="margin-bottom:14px">
+        <div class="kpi"><span>Total registado</span><b id="lcTotal">–</b><small id="lcTotalSem"></small></div>
+        <div class="kpi"><span class="socio"><i style="background:var(--s1)"></i>Nuno Cardoso · 50%</span><b id="lcNuno">–</b></div>
+        <div class="kpi"><span class="socio"><i style="background:var(--s4)"></i>Bruno Pinto · 50%</span><b id="lcBruno">–</b></div>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Semana</th><th>Período</th><th class="n">Valor ganho</th><th class="n">Nuno (50%)</th><th class="n">Bruno (50%)</th><th>Observações</th><th></th></tr></thead>
+        <tbody id="lcLista"></tbody>
+      </table></div>
+      <div class="tabela" id="lcVazio">Ainda não há lucros registados. Carregue em "Atualizar da folha" no Painel se já gravou algum noutro computador.</div>
+    </div>
+  </div>
+</section>
+
+<dialog id="dlgFatura">
+  <h2 style="margin-top:0">Enviar fatura para o Google Drive</h2>
+  <div class="tabela" style="margin:0 0 14px">Vai para <b>CARROSSEL DE RESULTADOS – LDA → Faturas</b>, dentro da pasta do mês (ex.: "2026-10 Outubro"), que é criada se ainda não existir.</div>
+  <div class="field">
+    <label for="fatFicheiros">Ficheiros (PDF ou foto)</label>
+    <input id="fatFicheiros" type="file" accept="application/pdf,image/*" multiple>
+  </div>
+  <div class="field">
+    <label for="fatData">Data da fatura (define a pasta do mês)</label>
+    <input id="fatData" type="date">
+  </div>
+  <div class="fatlista" id="fatLista"></div>
+  <div class="row">
+    <button class="btn btn-ghost" id="fatFechar">Fechar</button>
+    <button class="btn btn-dark" id="fatEnviar">Enviar</button>
+  </div>
+</dialog>
+
+<dialog id="dlgGoogle">
+  <h2 style="margin-top:0">Entrar com Google</h2>
+  <div class="field">
+    <label for="gEmail">Email da conta Google onde está a sua folha</label>
+    <input id="gEmail" type="email" autocomplete="email" placeholder="nome@gmail.com">
+    <div class="tabela">Se tiver várias contas Google abertas neste browser, indique qual quer usar. Deixe vazio para usar a conta principal do browser.</div>
+  </div>
+  <div class="row">
+    <button class="btn btn-ghost" id="gCancelar">Cancelar</button>
+    <button class="btn btn-dark" id="gContinuar">Continuar</button>
+  </div>
+</dialog>
+
+<dialog id="dlg">
+  <h2 style="margin-top:0">Definições</h2>
+  <div class="field">
+    <label for="cfgKey">Chave da API Google Maps</label>
+    <input id="cfgKey" placeholder="AIza...">
+    <div class="tabela">Ative no Google Cloud: Maps JavaScript API, Routes API e Places API (New). Sem chave (ou se a Google recusar), a app usa OpenStreetMap.</div>
+  </div>
+  <div class="field">
+    <label for="cfgWhats">WhatsApp para receber pedidos (só números, com indicativo)</label>
+    <input id="cfgWhats" placeholder="3519xxxxxxxx">
+  </div>
+  <div class="field">
+    <label for="cfgScript">Ligação à folha TVDE — URL do Apps Script</label>
+    <input id="cfgScript" placeholder="https://script.google.com/macros/s/.../exec">
+  </div>
+  <div class="field">
+    <label for="cfgToken">Token de acesso</label>
+    <input id="cfgToken" placeholder="gu-...">
+    <div class="tabela">O token tem de ser igual ao que está no script. A folha continua privada.</div>
+  </div>
+  <div class="field">
+    <label for="cfgFolha">Link da sua folha (opcional, para "Entrar com Google")</label>
+    <input id="cfgFolha" placeholder="https://docs.google.com/spreadsheets/d/...">
+    <div class="tabela">Se ficar vazio, procura um ficheiro chamado "GrowuP Driving" na Google Drive de quem fizer login.</div>
+  </div>
+  <div class="row">
+    <button class="btn btn-ghost" id="dlgCancel">Cancelar</button>
+    <button class="btn btn-dark" id="dlgSave">Guardar</button>
+  </div>
+</dialog>
+
+<div class="rodape-marca"><b>Profissionalismo</b> · Conforto · Qualidade</div>
+<script>
+/* ================== CONFIGURAÇÃO ================== */
+const CONFIG = {
+  GOOGLE_MAPS_API_KEY: "",      // cole aqui a sua chave (ou use ⚙️ Definições)
+  WHATSAPP: "",                 // ex.: "351912345678"
+  PRECO_BASE: 5.00,             // até KM_BASE
+  KM_BASE: 5,
+  PRECO_KM_EXTRA: 0.60,
+  ARREDONDAR_KM_EXTRA: true,    // true = cada km começado conta como km inteiro
+  PAIS: "pt"
+};
+
+/* ================== UTILITÁRIOS ================== */
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+const eur = n => n.toLocaleString("pt-PT",{style:"currency",currency:"EUR"});
+const kmFmt = n => n.toLocaleString("pt-PT",{maximumFractionDigits:1}) + " km";
+function durFmt(s){ const m = Math.round(s/60); return m < 60 ? m + " min" : Math.floor(m/60) + "h " + (m%60) + "m"; }
+function mostrar(texto, tipo){ const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo||""); }
+
+const apiKey   = () => store.get("cfg_key", "") || CONFIG.GOOGLE_MAPS_API_KEY;
+const whatsNum = () => store.get("cfg_whats", "") || CONFIG.WHATSAPP;
+
+/* ================== PREÇO ================== */
+function calcularPreco(km){
+  const kmR = Math.round(km * 10) / 10;
+  if (kmR <= CONFIG.KM_BASE) return { total: CONFIG.PRECO_BASE, extra: 0 };
+  let extra = kmR - CONFIG.KM_BASE;
+  if (CONFIG.ARREDONDAR_KM_EXTRA) extra = Math.ceil(extra - 1e-9);
+  const total = CONFIG.PRECO_BASE + extra * CONFIG.PRECO_KM_EXTRA;
+  return { total: Math.round(total * 100) / 100, extra };
+}
+
+/* ================== GOOGLE MAPS ================== */
+// Uma só chave, 3 APIs ativas no Google Cloud:
+//   Maps JavaScript API  -> mapa            (10.000 carregamentos/mês grátis)
+//   Routes API           -> km e duração    (Compute Routes Essentials: 10.000/mês grátis)
+//   Places API (New)     -> sugestões       (sessões de autocomplete grátis; Place Details Essentials 10.000/mês)
+let gReady = null, gLibs = null, sessionToken = null, gFalhou = false;
+let map = null, linhas = [], marcadores = [];
+
+window.gm_authFailure = () => {
+  gFalhou = true;
+  mostrar("A Google recusou a chave (confirme as APIs ativas, a faturação e as restrições de domínio). A usar OpenStreetMap.", "err");
+};
+
+function carregarGoogle(){
+  if (!apiKey()) return Promise.resolve(false);
+  if (gReady) return gReady;
+  gReady = new Promise(resolve => {
+    window.__gmInit = async () => {
+      try{
+        const [maps, routes, places, marker] = await Promise.all(
+          ["maps", "routes", "places", "marker"].map(l => google.maps.importLibrary(l)));
+        gLibs = { maps, routes, places, marker };
+        sessionToken = new places.AutocompleteSessionToken();
+        resolve(true);
+      }catch(e){ console.error(e); resolve(false); }
+    };
+    const s = document.createElement("script");
+    s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(apiKey())
+      + "&v=weekly&language=pt-PT&region=PT&loading=async&callback=__gmInit";
+    s.async = true;
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
+  return gReady;
+}
+async function usarGoogle(){ return (await carregarGoogle()) && !gFalhou; }
+
+async function sugestoesGoogle(texto){
+  const { suggestions } = await gLibs.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+    input: texto, sessionToken, includedRegionCodes: [CONFIG.PAIS], language: "pt-PT", region: CONFIG.PAIS
+  });
+  return suggestions.filter(s => s.placePrediction)
+    .map(s => ({ texto: s.placePrediction.text.toString(), pred: s.placePrediction }));
+}
+
+// Ao escolher uma sugestão: obtém as coordenadas exatas e fecha a sessão de autocomplete
+async function coordenadasGoogle(item){
+  const place = item.pred.toPlace();
+  await place.fetchFields({ fields: ["location"] });
+  sessionToken = new gLibs.places.AutocompleteSessionToken();
+  return { lat: place.location.lat(), lng: place.location.lng() };
+}
+
+async function rotaGoogle(origem, destino){
+  const { routes } = await gLibs.routes.Route.computeRoutes({
+    origin: origem, destination: destino,
+    travelMode: "DRIVING", routingPreference: "TRAFFIC_UNAWARE",
+    language: "pt-PT", region: CONFIG.PAIS,
+    fields: ["distanceMeters", "durationMillis", "path"]
+  });
+  if (!routes || !routes.length) throw new Error("Não foi possível calcular o percurso.");
+  const rt = routes[0];
+  return { metros: rt.distanceMeters, segundos: (rt.durationMillis || 0) / 1000,
+           path: (rt.path || []).map(p => ({ lat: p.lat, lng: p.lng })), fonte: "Google Maps (Routes API)" };
+}
+
+function desenharMapa(path){
+  const el = $("map");
+  if (!path || !path.length || !gLibs){
+    el.textContent = apiKey() ? "Mapa indisponível para este percurso." : "Mapa disponível ao configurar a chave Google Maps em ⚙️ Definições.";
+    return;
+  }
+  if (!map){
+    el.textContent = ""; el.style.padding = "0";
+    map = new gLibs.maps.Map(el, { mapId: "DEMO_MAP_ID", disableDefaultUI: true, zoomControl: true, gestureHandling: "cooperative" });
+  }
+  linhas.forEach(l => l.setMap(null)); marcadores.forEach(m => m.map = null);
+  linhas = [new gLibs.maps.Polyline({ path, strokeColor: "#f59e0b", strokeWeight: 5, strokeOpacity: .95, map })];
+  const { AdvancedMarkerElement, PinElement } = gLibs.marker;
+  marcadores = [[path[0], "A", "#16a34a"], [path[path.length - 1], "B", "#dc2626"]].map(([pos, g, c]) =>
+    new AdvancedMarkerElement({ map, position: pos,
+      content: new PinElement({ glyph: g, background: c, borderColor: c, glyphColor: "#fff" }).element }));
+  const b = new gLibs.maps.LatLngBounds(); path.forEach(p => b.extend(p)); map.fitBounds(b, 30);
+}
+
+/* ================== ALTERNATIVA SEM CHAVE (OpenStreetMap) ================== */
+async function geocodeOSM(q){
+  const u = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=${CONFIG.PAIS}&accept-language=pt&q=${encodeURIComponent(q)}`;
+  const r = await fetch(u); return r.json();
+}
+async function sugestoesOSM(texto){ return (await geocodeOSM(texto)).map(x => ({ texto: x.display_name, coords: { lat: +x.lat, lng: +x.lon } })); }
+async function pontoOSM(p, nome){
+  if (typeof p !== "string") return p;
+  const r = await geocodeOSM(p);
+  if (!r.length) throw new Error("Morada de " + nome + " não encontrada.");
+  return { lat: +r[0].lat, lng: +r[0].lon };
+}
+async function rotaOSM(origem, destino){
+  const [a, b] = await Promise.all([pontoOSM(origem, "recolha"), pontoOSM(destino, "chegada")]);
+  const u = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`;
+  const j = await (await fetch(u)).json();
+  if (!j.routes || !j.routes.length) throw new Error("Não foi possível calcular o percurso.");
+  return { metros: j.routes[0].distance, segundos: j.routes[0].duration, path: null, fonte: "OpenStreetMap" };
+}
+
+/* ================== AUTOCOMPLETE ================== */
+const escolha = { origem: null, destino: null };   // coordenadas da sugestão escolhida
+
+function ligarAutocomplete(inputId, boxId){
+  const inp = $(inputId), box = $(boxId); let t = null, idx = -1, itens = [];
+  const fechar = () => { box.style.display = "none"; idx = -1; };
+  const selecionar = async item => {
+    inp.value = item.texto; fechar(); escolha[inputId] = null;
+    try{ escolha[inputId] = item.coords || (item.pred ? await coordenadasGoogle(item) : null); }catch(e){}
+  };
+  inp.addEventListener("input", () => {
+    invalidar(); escolha[inputId] = null;
+    clearTimeout(t);
+    const v = inp.value.trim();
+    if (v.length < 3) return fechar();
+    t = setTimeout(async () => {
+      try{
+        const temG = await usarGoogle();
+        try{ itens = temG ? await sugestoesGoogle(v) : await sugestoesOSM(v); }
+        catch(e){ itens = await sugestoesOSM(v); }
+        itens = itens.slice(0, 5);
+        box.innerHTML = "";
+        itens.forEach(item => {
+          const d = document.createElement("div"); d.textContent = item.texto;
+          d.onmousedown = e => { e.preventDefault(); selecionar(item); };
+          box.appendChild(d);
+        });
+        box.style.display = itens.length ? "block" : "none";
+      }catch(e){ fechar(); }
+    }, apiKey() ? 250 : 700);
+  });
+  inp.addEventListener("keydown", e => {
+    const els = [...box.children]; if (!els.length || box.style.display === "none") return;
+    if (e.key === "ArrowDown"){ idx = (idx + 1) % els.length; e.preventDefault(); }
+    else if (e.key === "ArrowUp"){ idx = (idx - 1 + els.length) % els.length; e.preventDefault(); }
+    else if (e.key === "Enter" && idx >= 0){ e.preventDefault(); selecionar(itens[idx]); return; }
+    else if (e.key === "Escape"){ fechar(); return; }
+    els.forEach((el, i) => el.classList.toggle("active", i === idx));
+  });
+  inp.addEventListener("blur", () => setTimeout(fechar, 150));
+}
+
+/* ================== CÁLCULO ================== */
+let ultimo = null;
+function invalidar(){
+  ultimo = null; $("btnAgendar").disabled = true; $("btnWhats").disabled = true;
+}
+
+async function calcular(){
+  const origem = $("origem").value.trim(), destino = $("destino").value.trim();
+  if (!origem || !destino) return mostrar("Indique o local de recolha e o local de chegada.", "err");
+  const btn = $("btnCalc"); btn.disabled = true; btn.textContent = "A calcular…"; mostrar("");
+  try{
+    const temG = await usarGoogle();
+    const pO = escolha.origem || origem, pD = escolha.destino || destino;
+    let r;
+    try{ r = temG ? await rotaGoogle(pO, pD) : await rotaOSM(pO, pD); }
+    catch(e){
+      if (!temG) throw e;
+      console.warn("Routes API falhou:", e);
+      r = await rotaOSM(pO, pD); r.fonte = "OpenStreetMap (a Routes API da Google não respondeu: " + (e.message || e) + ")";
+    }
+    const km = r.metros / 1000;
+    const p = calcularPreco(km);
+    ultimo = { origem, destino, km, segundos: r.segundos, preco: p.total, kmExtra: p.extra };
+    $("kms").textContent = kmFmt(km);
+    $("dur").textContent = durFmt(r.segundos);
+    $("extra").textContent = p.extra ? p.extra.toLocaleString("pt-PT",{maximumFractionDigits:1}) : "0";
+    $("total").textContent = eur(p.total);
+    $("detalhe").textContent = p.extra
+      ? `${eur(CONFIG.PRECO_BASE)} (até ${CONFIG.KM_BASE} km) + ${p.extra.toLocaleString("pt-PT",{maximumFractionDigits:1})} km × ${eur(CONFIG.PRECO_KM_EXTRA)}`
+      : `Tarifa mínima até ${CONFIG.KM_BASE} km`;
+    $("fonte").textContent = "Distância calculada com " + r.fonte + ".";
+    desenharMapa(r.path);
+    $("btnAgendar").disabled = false; $("btnWhats").disabled = false;
+  }catch(e){
+    mostrar(e.message || "Erro ao calcular o percurso.", "err");
+  }finally{
+    btn.disabled = false; btn.textContent = "Calcular distância e preço";
+  }
+}
+
+/* ================== GOOGLE CALENDAR ================== */
+const CAL = { FUSO: "Europe/Lisbon", MIN_DURACAO: 30, MARGEM: 15 };   // minutos
+function calInicioFim(a){
+  const ini = new Date(a.data + "T" + a.hora);
+  const min = Math.max(CAL.MIN_DURACAO, Math.ceil((+a.segundos || 0) / 60) + CAL.MARGEM);
+  return [ini, new Date(ini.getTime() + min * 60e3)];
+}
+function calTitulo(a){ return `🚗 Transfer · ${a.nome}`; }
+function calDescricao(a){
+  return [`Cliente: ${a.nome} · ${a.tel}`, `Recolha: ${a.origem}`, `Chegada: ${a.destino}`,
+    `Distância: ${kmFmt(a.km)} · ${durFmt(a.segundos)}`, `Preço: ${eur(a.preco)}`, `${a.pax} pax · ${a.malas} malas`]
+    .concat(a.notas ? [`Notas: ${a.notas}`] : []).concat(["", "GrowuP Driving"]).join("\n");
+}
+const calLocal = d => `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}T${p2(d.getHours())}${p2(d.getMinutes())}00`;
+function linkGoogleCal(a){
+  const [i, f] = calInicioFim(a);
+  const q = new URLSearchParams({ action: "TEMPLATE", text: calTitulo(a), dates: calLocal(i) + "/" + calLocal(f),
+    ctz: CAL.FUSO, details: calDescricao(a), location: a.origem });
+  return "https://calendar.google.com/calendar/render?" + q.toString();
+}
+/* ================== AGENDAMENTOS ================== */
+let agendamentos = store.get("agendamentos", []);
+
+function recolherDados(){
+  const data = $("data").value, hora = $("hora").value;
+  if (!data || !hora) { mostrar("Escolha o dia e a hora do agendamento.", "err"); return null; }
+  if (new Date(data + "T" + hora) < new Date()) { mostrar("A data e hora têm de ser no futuro.", "err"); return null; }
+  if (!$("nome").value.trim() || !$("tel").value.trim()) { mostrar("Indique o nome e o telemóvel.", "err"); return null; }
+  return { ...ultimo, data, hora, nome: $("nome").value.trim(), tel: $("tel").value.trim(),
+           pax: $("pax").value, malas: $("malas").value, notas: $("notas").value.trim(), id: Date.now() };
+}
+
+function textoPedido(a){
+  const d = new Date(a.data + "T" + a.hora).toLocaleDateString("pt-PT",{weekday:"long",day:"2-digit",month:"long"});
+  return `🚗 *Pedido de Transfer*\n📅 ${d} às ${a.hora}\n🟢 Recolha: ${a.origem}\n🔴 Chegada: ${a.destino}\n📏 ${kmFmt(a.km)} · ${durFmt(a.segundos)}\n💶 Preço: ${eur(a.preco)}\n👤 ${a.nome} · ${a.tel}\n👥 ${a.pax} pax · 🧳 ${a.malas} malas` + (a.notas ? `\n📝 ${a.notas}` : "");
+}
+
+const ESTADOS = { agendada: "Agendada", concluida: "Concluída", cancelada: "Cancelada" };
+const estadoDe = a => a.estado || "agendada";
+function guardar(){ store.set("agendamentos", agendamentos); renderLista(); renderDash(); }
+function mudarEstado(id, estado){
+  const a = agendamentos.find(x => x.id === id); if (!a) return;
+  a.estado = estado; guardar();
+}
+
+function renderLista(){
+  const el = $("lista");
+  if (!agendamentos.length){ el.innerHTML = '<div class="tabela">Ainda sem agendamentos.</div>'; return; }
+  el.innerHTML = "";
+  [...agendamentos].sort((x,y) => (y.data+y.hora).localeCompare(x.data+x.hora)).forEach(a => {
+    const div = document.createElement("div"); div.className = "booking";
+    const d = new Date(a.data + "T" + a.hora).toLocaleDateString("pt-PT",{day:"2-digit",month:"short"});
+    const est = estadoDe(a);
+    div.innerHTML = `<div class="top"><span><span class="t"></span><span class="tag t-${est}">${ESTADOS[est]}</span></span><span>${eur(a.preco)}</span></div>
+      <div class="muted o"></div><div class="muted d"></div><div class="muted i"></div>
+      <div class="acoes"></div>`;
+    div.querySelector(".t").textContent = `${d} · ${a.hora} — ${a.nome}`;
+    div.querySelector(".o").textContent = "A: " + a.origem;
+    div.querySelector(".d").textContent = "B: " + a.destino;
+    div.querySelector(".i").textContent = `${kmFmt(a.km)} · ${a.pax} pax · ${a.tel}`;
+    const ac = div.querySelector(".acoes");
+    const botao = (txt, fn, cls) => { const b = document.createElement("button"); b.textContent = txt; b.onclick = fn; if (cls) b.className = cls; ac.appendChild(b); };
+    if (est !== "concluida") botao("✓ Concluída", () => mudarEstado(a.id, "concluida"));
+    if (est !== "agendada")  botao("Repor agendada", () => mudarEstado(a.id, "agendada"));
+    if (est !== "cancelada") botao("Cancelar", () => mudarEstado(a.id, "cancelada"));
+    if (est !== "cancelada"){
+      botao("📅 Google Calendar", () => window.open(linkGoogleCal(a), "_blank", "noopener"), "cal");
+    }
+    botao("Remover", () => {
+      if (!confirm("Remover este agendamento?")) return;
+      agendamentos = agendamentos.filter(x => x.id !== a.id); guardar();
+    }, "rm");
+    el.appendChild(div);
+  });
+}
+
+/* ================== DASHBOARD ================== */
+let periodo = "mes";
+function noPeriodo(a){
+  if (periodo === "tudo") return true;
+  const d = new Date(a.data + "T" + (a.hora || "00:00")), agora = new Date();
+  const ini = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  if (periodo === "hoje") return d >= ini && d < new Date(ini.getTime() + 864e5);
+  if (periodo === "7")    return d >= new Date(ini.getTime() - 6 * 864e5) && d < new Date(ini.getTime() + 864e5);
+  if (periodo === "mes")  return d.getFullYear() === agora.getFullYear() && d.getMonth() === agora.getMonth();
+  if (periodo === "ano")  return d.getFullYear() === agora.getFullYear();
+  return true;
+}
+// Identifica o cliente pelo telemóvel (últimos 9 dígitos); se não houver, pelo nome
+const chaveCliente = a => { const t = String(a.tel || "").replace(/\D/g, "").slice(-9); return t || "n:" + String(a.nome || "").trim().toLowerCase(); };
+
+function renderDash(){
+  const lista = agendamentos.filter(noPeriodo);
+  const feitas = lista.filter(a => estadoDe(a) === "concluida");
+  const futuras = lista.filter(a => estadoDe(a) === "agendada");
+  const soma = (arr, k) => arr.reduce((s, a) => s + (Number(a[k]) || 0), 0);
+
+  const ganhos = soma(feitas, "preco"), kms = soma(feitas, "km");
+  $("kGanhos").textContent = eur(ganhos);
+  $("kPrevisto").textContent = futuras.length ? `+ ${eur(soma(futuras, "preco"))} previstos` : "";
+  $("kViagens").textContent = feitas.length;
+  $("kAgendadas").textContent = futuras.length ? `${futuras.length} por realizar` : "";
+  $("kKms").textContent = kmFmt(kms);
+  $("kMedia").textContent = feitas.length ? `${eur(ganhos / Math.max(kms, 0.1))}/km · ${kmFmt(kms / feitas.length)} por viagem` : "";
+
+  // Clientes: contam todos os pedidos (exceto cancelados)
+  const pedidos = lista.filter(a => estadoDe(a) !== "cancelada");
+  const mapa = new Map();
+  pedidos.forEach(a => {
+    const k = chaveCliente(a);
+    const c = mapa.get(k) || { nome: a.nome, tel: a.tel, viagens: 0, km: 0, valor: 0, ultima: "" };
+    c.viagens++; c.km += Number(a.km) || 0; c.valor += Number(a.preco) || 0;
+    const quando = a.data + "T" + a.hora;
+    if (quando > c.ultima){ c.ultima = quando; c.nome = a.nome; }
+    mapa.set(k, c);
+  });
+  const clientes = [...mapa.values()].sort((x, y) => y.viagens - x.viagens || y.valor - x.valor);
+  const repetem = clientes.filter(c => c.viagens > 1);
+  $("kClientes").textContent = clientes.length;
+  $("kRepetem").textContent = clientes.length ? `${repetem.length} repetiram (${Math.round(repetem.length / clientes.length * 100)}%)` : "";
+
+  const linha = (cells) => { const tr = document.createElement("tr");
+    cells.forEach(([v, n], i) => { const td = document.createElement("td"); td.textContent = v; if (n) td.className = "n"; if (i === 1) td.classList.add("col-tel"); tr.appendChild(td); }); return tr; };
+  const dataCurta = s => s ? new Date(s).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" }) : "";
+
+  const tR = $("tRepetem"); tR.innerHTML = "";
+  repetem.forEach(c => tR.appendChild(linha([[c.nome], [c.tel], [c.viagens, 1], [kmFmt(c.km), 1], [eur(c.valor), 1], [dataCurta(c.ultima)]])));
+  $("semRepetem").classList.toggle("hidden", repetem.length > 0);
+
+  const tC = $("tClientes"); tC.innerHTML = "";
+  if (!clientes.length) tC.appendChild(linha([["Sem clientes neste período."], [""], [""], [""]]));
+  clientes.forEach(c => tC.appendChild(linha([[c.nome], [c.tel], [c.viagens, 1], [eur(c.valor), 1]])));
+}
+
+$("filtros").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  periodo = b.dataset.p;
+  document.querySelectorAll("#filtros .chip").forEach(c => c.classList.toggle("on", c === b));
+  renderDash();
+});
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === t));
+  ["viewAgendar", "viewDash", "viewTvde"].forEach(v => $(v).classList.toggle("hidden", v !== t.dataset.view));
+  if (t.dataset.view === "viewDash") renderDash();
+  if (t.dataset.view === "viewTvde"){
+    renderTvde();
+    if (!contaGoogle() && scriptUrl() && scriptToken() && (!tvDados || Date.now() - new Date(tvDados.atualizado) > 30 * 60e3)) atualizarDaFolha();
+  }
+});
+
+$("btnAgendar").onclick = () => {
+  const a = recolherDados(); if (!a) return;
+  a.estado = "agendada"; agendamentos.push(a); guardar();
+  mostrar("Agendamento registado. Pode enviá-lo agora por WhatsApp.", "ok");
+};
+$("btnWhats").onclick = () => {
+  const a = recolherDados(); if (!a) return;
+  const n = whatsNum().replace(/\D/g, "");
+  window.open(`https://wa.me/${n}?text=${encodeURIComponent(textoPedido(a))}`, "_blank");
+};
+
+
+/* ================== DASHBOARD TVDE ================== */
+const TVDE = {
+  LIMITE_INVEST: 5000,   // despesas a partir deste valor contam como compra de viatura
+  // Ligação à folha (Apps Script "GrowUP Dashboard TVDE"); pode ser alterada em ⚙️ Definições
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwlp7IcYvAkYdq5byDzlI_24mG9kBBYt9aphJ9WP0dUsQvS_Caz2Y2o5_V_39FTJi3e/exec",
+  TOKEN: "",   // o código de acesso é introduzido em ⚙️ Definições (fica só neste browser)
+  // O Google corta nomes de abas com mais de 31 caracteres ao converter o .xlsx
+  NOMES: { "C4 SpaceTou": "C4 SpaceTourer" }
+};
+const nomeViatura = n => TVDE.NOMES[String(n).trim()] || String(n).trim();
+const scriptUrl = () => store.get("cfg_script", "") || TVDE.SCRIPT_URL;
+const scriptToken = () => store.get("cfg_token", "") || TVDE.TOKEN;
+// Implementação "Entrar com Google" (executa como quem faz login e lê a folha da Drive dessa pessoa)
+TVDE.LOGIN_URL = "https://script.google.com/macros/s/AKfycbyor9cxrDTe9vpByZ2nwZaszvq7lUNwDBCaKnjLJd408_BUxj7USeSlt81_WZmfb95L/exec";
+const contaGoogle = () => store.get("google_login", null);   // { email, ficheiro } quando há login
+let tvDados = store.get("tvde_cache", null);   // { atualizado, fonte, viaturas: { nome: [[data,tipo,desc,valor,quem]] } }
+let tvViatura = "todas", tvPeriodo = "12", charts = {};
+
+function numPT(v){
+  if (typeof v === "number") return v;
+  let s = String(v ?? "").replace(/[€\s ]/g, "");
+  if (!s) return NaN;
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  return parseFloat(s);
+}
+const p2 = n => String(n).padStart(2, "0");
+function dataISO(v){
+  if (v instanceof Date && !isNaN(v)) return `${v.getFullYear()}-${p2(v.getMonth()+1)}-${p2(v.getDate())}`;
+  if (typeof v === "number" && v > 20000 && v < 80000){ const d = new Date(Math.round((v - 25569) * 864e5)); return `${d.getUTCFullYear()}-${p2(d.getUTCMonth()+1)}-${p2(d.getUTCDate())}`; }
+  const s = String(v ?? "").trim();
+  let m = s.match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})/); if (m) return `${m[1]}-${p2(m[2])}-${p2(m[3])}`;
+  m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/);
+  if (m){ let d = +m[1], mes = +m[2]; if (mes > 12 && d <= 12) [d, mes] = [mes, d];   // "4/14/2024" (mês/dia) vs "19/10/2025" (dia/mês)
+          if (mes >= 1 && mes <= 12 && d >= 1 && d <= 31) return `${m[3]}-${p2(mes)}-${p2(d)}`; }
+  return null;
+}
+const semAcento = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+function categoriaDespesa(desc){
+  const d = semAcento(desc);
+  if (/gasoleo|gasolina|combust|carregamento|eletric|supercharg/.test(d)) return "Combustível / energia";
+  if (/imposto|seguranca social|\b(iuc|irs|iva)\b/.test(d)) return "Impostos";
+  if (/seguro/.test(d)) return "Seguro";
+  if (/pastilh|pneu|revis|rolament|disco|peca|manut|inspec|mao de obra|remendo|oleo|oficina/.test(d)) return "Manutenção";
+  if (/via verde|portagem/.test(d)) return "Portagens";
+  if (/parqu|estacion/.test(d)) return "Estacionamento";
+  if (/lavagem/.test(d)) return "Lavagem";
+  if (/uber|bolt/.test(d)) return "Comissões / plataformas";
+  return "Outras";
+}
+function origemReceita(desc){
+  const d = semAcento(desc);
+  if (d.includes("uber")) return "Uber";
+  if (d.includes("bolt")) return "Bolt";
+  if (d.includes("privad")) return "Privados / transfers";
+  return "Outras";
+}
+
+// Converte as linhas da folha em movimentos limpos + avisos sobre dados suspeitos
+function normalizarTvde(viaturas){
+  const mov = [], av = { sinal: 0, duplicados: 0, ignoradas: 0 };
+  Object.entries(viaturas || {}).forEach(([nomeAba, linhas]) => {
+    const viatura = nomeViatura(nomeAba);
+    linhas.forEach(([data, tipo, desc, valor, quem]) => {
+      const d = dataISO(data), v = numPT(valor);
+      if (!d || !isFinite(v) || v === 0){ av.ignoradas++; return; }
+      let t = semAcento(tipo).startsWith("e") ? "receita" : "despesa";
+      if (t === "receita" && v < 0){ t = "despesa"; av.sinal++; }      // "Entrada" com valor negativo = despesa
+      const val = Math.abs(v), invest = t === "despesa" && val >= TVDE.LIMITE_INVEST;
+      mov.push({ viatura, data: d, tipo: t, desc: String(desc || "").trim(), valor: val, invest, quem: String(quem || "").trim(),
+                 cat: t === "despesa" ? (invest ? "Compra de viatura" : categoriaDespesa(desc)) : origemReceita(desc) });
+    });
+  });
+  // Linhas copiadas de outra viatura com data anterior à compra desta viatura são removidas
+  const compra = {};
+  mov.filter(m => m.invest).forEach(m => { if (!compra[m.viatura] || m.data < compra[m.viatura]) compra[m.viatura] = m.data; });
+  const chave = m => [m.data, m.tipo, semAcento(m.desc), m.valor.toFixed(2)].join("|");
+  const porChave = new Map();
+  mov.forEach(m => { const k = chave(m); if (!porChave.has(k)) porChave.set(k, new Set()); porChave.get(k).add(m.viatura); });
+  const limpos = mov.filter(m => {
+    const dup = porChave.get(chave(m)).size > 1;
+    if (dup && compra[m.viatura] && m.data < compra[m.viatura]){ av.duplicados++; return false; }
+    return true;
+  });
+  return { mov: limpos, av };
+}
+
+function inicioSemana(iso){
+  const [y, m, d] = iso.split("-").map(Number), dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+  return `${dt.getFullYear()}-${p2(dt.getMonth()+1)}-${p2(dt.getDate())}`;
+}
+function noPeriodoTvde(iso){
+  const hoje = new Date(), hojeIso = dataISO(hoje);
+  if (tvPeriodo === "tudo") return iso <= hojeIso;
+  if (tvPeriodo === "ano") return iso.slice(0, 4) === String(hoje.getFullYear()) && iso <= hojeIso;
+  if (tvPeriodo === "anoant") return iso.slice(0, 4) === String(hoje.getFullYear() - 1);
+  const ini = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  ini.setDate(ini.getDate() - ((ini.getDay() + 6) % 7) - (Number(tvPeriodo) - 1) * 7);
+  return iso >= dataISO(ini) && iso <= hojeIso;
+}
+const semanaLabel = iso => { const [y, m, d] = iso.split("-"); return `${d}/${m}`; };
+const semanaLonga = iso => { const a = new Date(iso + "T12:00"), b = new Date(a.getTime() + 6 * 864e5);
+  const f = x => x.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" }); return `${f(a)} – ${f(b)} ${b.getFullYear()}`; };
+
+function agregarTvde(mov, incluirInvest){
+  const lista = mov.filter(m => (tvViatura === "todas" || m.viatura === tvViatura) && noPeriodoTvde(m.data));
+  const conta = lista.filter(m => incluirInvest || !m.invest);
+  const semanas = new Map();
+  if (tvPeriodo === "12" || tvPeriodo === "26"){   // mostra também semanas sem movimentos
+    const hoje = new Date(); let s = inicioSemana(dataISO(hoje));
+    for (let i = 0; i < Number(tvPeriodo); i++){ semanas.set(s, { receita: 0, despesa: 0 });
+      const d = new Date(s + "T12:00"); d.setDate(d.getDate() - 7); s = dataISO(d); }
+  }
+  const cats = {}, origens = {}, viat = {}, soc = { nuno: { receita: 0, despesa: 0 }, bruno: { receita: 0, despesa: 0 }, outros: { receita: 0, despesa: 0 } };
+  conta.forEach(m => {
+    const s = inicioSemana(m.data); if (!semanas.has(s)) semanas.set(s, { receita: 0, despesa: 0 });
+    semanas.get(s)[m.tipo] += m.valor;
+    (m.tipo === "despesa" ? cats : origens)[m.cat] = ((m.tipo === "despesa" ? cats : origens)[m.cat] || 0) + m.valor;
+    viat[m.viatura] = viat[m.viatura] || { receita: 0, despesa: 0 }; viat[m.viatura][m.tipo] += m.valor;
+    soc[socioDe(m.quem)][m.tipo] += m.valor;
+  });
+  const ordem = [...semanas.keys()].sort();
+  const investFora = incluirInvest ? 0 : lista.filter(m => m.invest).reduce((s, m) => s + m.valor, 0);
+  return { semanas: ordem.map(k => ({ k, ...semanas.get(k) })), cats, origens, viat, soc, investFora };
+}
+
+async function carregarScript(src, teste){
+  if (teste()) return;
+  await new Promise((ok, erro) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => erro(new Error("Sem ligação à internet para carregar " + src)); document.head.appendChild(s); });
+}
+const CHART_JS = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js";
+const SHEETJS  = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+
+function novaSessao(){
+  const a = new Uint8Array(18); crypto.getRandomValues(a);
+  return btoa(String.fromCharCode(...a)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+let loginEmCurso = false;
+async function entrarComGoogle(email){
+  if (loginEmCurso) return;
+  email = String(email || "").trim();
+  const sessao = novaSessao(), folha = store.get("cfg_folha", "");
+  const jan = window.open(TVDE.LOGIN_URL + "?modo=login&sessao=" + sessao + (folha ? "&folha=" + encodeURIComponent(folha) : "")
+                          + (email ? "&authuser=" + encodeURIComponent(email) : ""),   // authuser escolhe a conta quando há várias
+                          "growupLogin", "width=520,height=680");
+  if (!jan){ tvEstado("O browser bloqueou a janela de login. Permita janelas pop-up para esta página e tente outra vez.", true); return; }
+  loginEmCurso = true; $("tvLogin").disabled = true; $("tvAtualizar").disabled = true;
+  tvEstado("Na janela da Google: escolha a conta e autorize (só da primeira vez). À espera dos dados da sua folha…");
+  const fim = Date.now() + 5 * 60e3; let fechadaEm = 0;
+  try{
+    while (Date.now() < fim){
+      await new Promise(r => setTimeout(r, 2500));
+      let j = null;
+      try{ j = await (await fetch(scriptUrl() + "?modo=recolher&sessao=" + sessao)).json(); }catch(e){ continue; }
+      if (j.erro) throw new Error(j.erro);
+      if (!j.pendente){
+        if (!j.viaturas || !Object.keys(j.viaturas).length) throw new Error("a folha \"" + (j.ficheiro || "") + "\" não tem abas \"Entradas e Saídas - …\".");
+        const conta = /@/.test(j.utilizador || "") ? j.utilizador : (email || "conta Google");
+        tvDados = { atualizado: j.atualizado || new Date().toISOString(), fonte: "Google Drive de " + conta + " (" + (j.ficheiro || "folha") + ")", viaturas: j.viaturas, lucros: j.lucros || [] };
+        store.set("tvde_cache", tvDados); store.set("google_login", { email: conta, ficheiro: j.ficheiro || "", pedido: email });
+        atualizarBotaoLogin(); renderTvde();
+        try{ if (!jan.closed) jan.close(); }catch(e){}
+        return;
+      }
+      // A janela pode parecer fechada durante o login da Google; espera ainda 45 s depois disso
+      if (jan.closed){ fechadaEm = fechadaEm || Date.now(); if (Date.now() - fechadaEm > 45000) throw new Error("a janela de login foi fechada antes de terminar."); }
+    }
+    throw new Error("o login não terminou a tempo. Tente outra vez.");
+  }catch(e){ tvEstado("Entrar com Google: " + (e.message || e), true); }
+  finally{ loginEmCurso = false; $("tvLogin").disabled = false; $("tvAtualizar").disabled = false; }
+}
+function sairGoogle(){
+  if (!confirm("Sair da conta Google " + (contaGoogle()?.email || "") + " neste dashboard?")) return;
+  store.set("google_login", null); store.set("tvde_cache", null); tvDados = null;
+  atualizarBotaoLogin(); renderTvde();
+  tvEstado("Sessão terminada. Carregue em \"Entrar com Google\" para ler a sua folha.");
+}
+function atualizarBotaoLogin(){
+  const c = contaGoogle();
+  $("tvLoginTxt").textContent = c ? `${c.email || "Conta Google"} · Sair` : "Entrar com Google";
+  $("tvLogin").title = c ? "Terminar a sessão Google neste dashboard" : "Entrar com a sua conta Google para ler a folha da sua Google Drive";
+}
+
+function tvEstado(txt, erro){ const e = $("tvEstado"); e.textContent = txt; e.style.color = erro ? "var(--err)" : ""; }
+function descreverFonte(){
+  if (!tvDados) return "Sem dados carregados.";
+  const quando = new Date(tvDados.atualizado).toLocaleString("pt-PT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return `Dados de: ${tvDados.fonte} · ${quando}`;
+}
+
+async function atualizarDaFolha(){
+  if (contaGoogle()) return entrarComGoogle(contaGoogle().pedido);   // com login Google, atualiza a partir da Drive de quem entrou
+  const url = scriptUrl(), token = scriptToken();
+  if (!url || !token){ tvEstado("Configure o URL do Apps Script e o token em ⚙️ Definições.", true); return; }
+  const b = $("tvAtualizar"); b.disabled = true; b.textContent = "A carregar…";
+  tvEstado("A ler a folha no Google Drive… (pode demorar até 15 segundos)");
+  let fase = "ligação";
+  try{
+    const ctrl = new AbortController(), limite = setTimeout(() => ctrl.abort(), 45000);
+    const r = await fetch(url + (url.includes("?") ? "&" : "?") + "fresh=1&token=" + encodeURIComponent(token), { signal: ctrl.signal });
+    clearTimeout(limite);
+    fase = "resposta";
+    if (!r.ok) throw new Error("o servidor respondeu com o código " + r.status);
+    const txt = await r.text();
+    let j; try{ j = JSON.parse(txt); }catch(e){ throw new Error("a resposta não veio em formato de dados (confirme que o URL termina em /exec e que o acesso está em \"Qualquer pessoa\")"); }
+    if (j.erro) throw new Error(j.erro);
+    if (!j.viaturas || !Object.keys(j.viaturas).length) throw new Error("a folha não tem abas \"Entradas e Saídas - …\".");
+    tvDados = { atualizado: j.atualizado || new Date().toISOString(), fonte: "Google Drive (" + (j.ficheiro || "folha") + ")", viaturas: j.viaturas, lucros: j.lucros || [] };
+    store.set("tvde_cache", tvDados); renderTvde();
+  }catch(e){
+    let msg = e.name === "AbortError" ? "a folha demorou demasiado a responder. Tente outra vez." : (e.message || String(e));
+    if (fase === "ligação" && e.name !== "AbortError"){
+      const preview = location.protocol !== "file:" && !/^https?:$/.test(location.protocol) || window.self !== window.top;
+      msg = "o pedido foi bloqueado antes de chegar à Google. " + (preview
+        ? "Está a ver a app numa pré-visualização, e a pré-visualização bloqueia ligações. Descarregue o ficheiro e abra-o no Chrome ou no Edge."
+        : "Confirme a ligação à internet e abra o ficheiro no Chrome ou no Edge.");
+    }
+    tvEstado("Não foi possível ler a folha: " + msg, true);
+    console.error("Atualizar da folha:", e);
+  }
+  finally{ b.disabled = false; b.textContent = "↻ Atualizar da folha"; }
+}
+
+async function importarExcel(file){
+  try{
+    tvEstado("A ler " + file.name + "…");
+    await carregarScript(SHEETJS, () => window.XLSX);
+    const wb = XLSX.read(await file.arrayBuffer(), { cellDates: true });
+    const viaturas = {};
+    wb.SheetNames.filter(n => semAcento(n).startsWith("entradas e saidas - ")).forEach(n => {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: "" });
+      const h = rows.findIndex(r => r.some(c => String(c).trim().toUpperCase() === "TIPO")); if (h < 0) return;
+      const cab = rows[h].map(c => semAcento(String(c).trim()));
+      const iD = cab.indexOf("data"), iT = cab.indexOf("tipo"), iV = cab.indexOf("valor"),
+            iDesc = cab.findIndex(c => c.startsWith("descri")), iQ = cab.findIndex(c => c.startsWith("quem"));
+      viaturas[n.split(" - ").slice(1).join(" - ").trim()] = rows.slice(h + 1)
+        .filter(r => r[iD] !== "" && r[iV] !== "")
+        .map(r => [r[iD], r[iT], r[iDesc], r[iV], iQ >= 0 ? r[iQ] : ""]);
+    });
+    if (!Object.keys(viaturas).length) throw new Error("não encontrei abas \"Entradas e Saídas - …\" neste ficheiro.");
+    tvDados = { atualizado: new Date().toISOString(), fonte: "ficheiro " + file.name, viaturas };
+    store.set("tvde_cache", tvDados); renderTvde();
+  }catch(e){ tvEstado("Erro ao importar: " + (e.message || e), true); }
+}
+
+function corVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function desenharGrafico(id, cfg){
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id), cfg);
+}
+const eur0 = n => n.toLocaleString("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+const eurK = n => Math.abs(n) >= 1000 ? eur0(n) : eur(n);   // valores grandes sem cêntimos nos indicadores
+
+async function renderTvde(){
+  tvEstado(descreverFonte());
+  const tem = !!(tvDados && tvDados.viaturas);
+  $("tvVazio").classList.toggle("hidden", tem);
+  $("tvConteudo").classList.toggle("hidden", !tem);
+  if (!tem) return;
+
+  const { mov, av } = normalizarTvde(tvDados.viaturas);
+  const nomes = [...new Set(Object.keys(tvDados.viaturas).map(nomeViatura))];
+  if (tvViatura !== "todas" && !nomes.includes(tvViatura)) tvViatura = "todas";
+  const cv = $("tvViaturas"); cv.innerHTML = "";
+  ["todas", ...nomes].forEach(n => { const b = document.createElement("button"); b.className = "chip" + (n === tvViatura ? " on" : "");
+    b.textContent = n === "todas" ? "Todas as viaturas" : n; b.onclick = () => { tvViatura = n; renderTvde(); }; cv.appendChild(b); });
+
+  const avisos = [];
+  if (av.duplicados) avisos.push(`${av.duplicados} linhas repetidas de outra viatura, com data anterior à compra, não foram contadas.`);
+  if (av.sinal) avisos.push(`${av.sinal} linhas marcadas como "Entrada" com valor negativo foram contadas como despesa.`);
+  $("tvAviso").innerHTML = avisos.map(a => "⚠️ " + a).join("<br>");
+  $("tvAviso").classList.toggle("hidden", !avisos.length);
+
+  const ag = agregarTvde(mov, $("tvInvest").checked);
+  const rec = ag.semanas.reduce((s, x) => s + x.receita, 0), desp = ag.semanas.reduce((s, x) => s + x.despesa, 0), lucro = rec - desp;
+  const nSem = Math.max(ag.semanas.length, 1);
+  $("tvReceita").textContent = eurK(rec);
+  $("tvReceitaSem").textContent = `${eur(rec / nSem)} por semana (média)`;
+  $("tvDespesa").textContent = eurK(desp);
+  $("tvDespesaSem").textContent = ag.investFora ? `+ ${eur0(ag.investFora)} em compra de viaturas (não incluído)` : `${eur(desp / nSem)} por semana (média)`;
+  $("tvLucro").textContent = eurK(lucro); $("tvLucro").className = lucro >= 0 ? "pos" : "neg";
+  $("tvMargem").textContent = rec ? `margem de ${Math.round(lucro / rec * 100)}%` : "";
+  $("tvRacio").textContent = rec ? (desp / rec).toLocaleString("pt-PT", { style: "currency", currency: "EUR" }) : "–";
+  const melhor = ag.semanas.reduce((a, b) => (b.receita > (a ? a.receita : -1) ? b : a), null);
+  $("tvMelhor").textContent = melhor && melhor.receita ? eurK(melhor.receita) : "–";
+  $("tvMelhorData").textContent = melhor && melhor.receita ? semanaLonga(melhor.k) : "";
+
+  // Tabelas
+  const linha = (cells, cls) => { const tr = document.createElement("tr");
+    cells.forEach(([v, n, c]) => { const td = document.createElement("td"); td.textContent = v; if (n) td.className = "n"; if (c) td.classList.add(c); tr.appendChild(td); }); return tr; };
+  const tS = $("tvTabSemanas"); tS.innerHTML = "";
+  [...ag.semanas].reverse().forEach(s => { const l = s.receita - s.despesa;
+    tS.appendChild(linha([[semanaLonga(s.k)], [eur(s.receita), 1], [eur(s.despesa), 1], [eur(l), 1, l >= 0 ? "pos" : "neg"],
+      [s.receita > 0 ? Math.round(s.despesa / s.receita * 100) + "%" : "–", 1]])); });
+  const tV = $("tvTabViaturas"); tV.innerHTML = "";
+  Object.entries(ag.viat).forEach(([n, v]) => { const l = v.receita - v.despesa;
+    tV.appendChild(linha([[n], [eur(v.receita), 1], [eur(v.despesa), 1], [eur(l), 1, l >= 0 ? "pos" : "neg"], [v.receita ? Math.round(l / v.receita * 100) + "%" : "–", 1]])); });
+  $("tvCardViaturas").classList.toggle("hidden", tvViatura !== "todas" || Object.keys(ag.viat).length < 2);
+  renderDivisao(ag);
+  if (!$("tvLucros").classList.contains("hidden")) lcRenderLista();
+
+  // Gráficos
+  try{ await carregarScript(CHART_JS, () => window.Chart); }
+  catch(e){ tvEstado(descreverFonte() + " · gráficos indisponíveis sem internet (as tabelas mostram os valores).", true); return; }
+  const tinta = corVar("--muted"), grelha = corVar("--grid"), s1 = corVar("--s1"), s2 = corVar("--s2"), s3 = corVar("--s3");
+  Chart.defaults.font.family = 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+  Chart.defaults.color = tinta;
+  const tooltipEur = { callbacks: { label: c => ` ${c.dataset.label ? c.dataset.label + ": " : ""}${eur(c.parsed.y ?? c.parsed.x)}` } };
+  const eixoEur = { grid: { color: grelha }, border: { display: false }, ticks: { callback: v => eur0(v) } };
+
+  desenharGrafico("chSemanas", { type: "bar",
+    data: { labels: ag.semanas.map(s => semanaLabel(s.k)), datasets: [
+      { type: "bar", label: "Receita", data: ag.semanas.map(s => +s.receita.toFixed(2)), backgroundColor: s1, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 18, order: 2 },
+      { type: "bar", label: "Despesas", data: ag.semanas.map(s => +s.despesa.toFixed(2)), backgroundColor: s2, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 18, order: 2 },
+      { type: "line", label: "Lucro", data: ag.semanas.map(s => +(s.receita - s.despesa).toFixed(2)), borderColor: s3, backgroundColor: s3, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: .25, order: 1 }
+    ]},
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "top", align: "start", labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: { ...tooltipEur, callbacks: { ...tooltipEur.callbacks, title: it => semanaLonga(ag.semanas[it[0].dataIndex].k) } } },
+      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true } }, y: eixoEur } }
+  });
+
+  // Receita e despesas por semana, cada uma com a média móvel de 4 semanas
+  const s4 = corVar("--s4"), ref = corVar("--ref");
+  const labels = ag.semanas.map(s => semanaLabel(s.k));
+  const mediaMovel = arr => arr.map((_, i) => { const j = arr.slice(Math.max(0, i - 3), i + 1); return +(j.reduce((a, b) => a + b, 0) / j.length).toFixed(2); });
+  const graficoSemanal = (id, valores, cor, nome) => desenharGrafico(id, { type: "bar",
+    data: { labels, datasets: [
+      { type: "bar", label: nome, data: valores, backgroundColor: cor, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 22, order: 2 },
+      { type: "line", label: "Média de 4 semanas", data: mediaMovel(valores), borderColor: ref, borderWidth: 2, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 4, tension: .3, order: 1 }
+    ]},
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "top", align: "start", labels: { usePointStyle: true, boxWidth: 8 } },
+        tooltip: { callbacks: { title: it => semanaLonga(ag.semanas[it[0].dataIndex].k), label: c => ` ${c.dataset.label}: ${eur(c.parsed.y)}` } } },
+      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true } }, y: eixoEur } } });
+  graficoSemanal("chReceita", ag.semanas.map(s => +s.receita.toFixed(2)), s1, "Receita");
+  graficoSemanal("chDespesa", ag.semanas.map(s => +s.despesa.toFixed(2)), s2, "Despesas");
+
+  // Despesa / receita (%) por semana, com a média do período como referência
+  const racio = ag.semanas.map(s => s.receita > 0 ? +(s.despesa / s.receita * 100).toFixed(1) : null);
+  const racioMedio = rec > 0 ? +(desp / rec * 100).toFixed(1) : null;
+  desenharGrafico("chRacio", { type: "line",
+    data: { labels, datasets: [
+      { label: "Despesa / receita", data: racio, borderColor: s4, backgroundColor: s4, borderWidth: 2, pointRadius: 3, pointHoverRadius: 6, spanGaps: false, tension: .25 },
+      { label: `Média do período (${racioMedio === null ? "–" : racioMedio.toLocaleString("pt-PT") + "%"})`, data: labels.map(() => racioMedio), borderColor: ref, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 }
+    ]},
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "top", align: "start", labels: { usePointStyle: true, boxWidth: 8 } },
+        tooltip: { callbacks: { title: it => semanaLonga(ag.semanas[it[0].dataIndex].k),
+          label: c => { if (c.datasetIndex === 1) return ` Média do período: ${c.parsed.y.toLocaleString("pt-PT")}%`;
+            const s = ag.semanas[c.dataIndex]; return ` ${c.parsed.y.toLocaleString("pt-PT")}% (${eur(s.despesa)} de ${eur(s.receita)})`; } } } },
+      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true } },
+        y: { beginAtZero: true, suggestedMax: 30, grid: { color: grelha }, border: { display: false }, ticks: { callback: v => v + "%" } } } } });
+
+  const horizontal = (id, obj, cor, label) => {
+    const pares = Object.entries(obj).sort((a, b) => b[1] - a[1]);
+    $(id).parentElement.style.height = Math.max(180, pares.length * 38 + 40) + "px";
+    desenharGrafico(id, { type: "bar",
+      data: { labels: pares.map(p => p[0]), datasets: [{ label, data: pares.map(p => +p[1].toFixed(2)), backgroundColor: cor, borderRadius: { topRight: 4, bottomRight: 4 }, borderSkipped: "left", maxBarThickness: 22 }] },
+      options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: c => ` ${eur(c.parsed.x)} (${Math.round(c.parsed.x / pares.reduce((s, p) => s + p[1], 0) * 100)}%)` } } },
+        scales: { x: { ...eixoEur }, y: { grid: { display: false }, border: { display: false } } } } });
+  };
+  horizontal("chCategorias", ag.cats, s2, "Despesas");
+  horizontal("chOrigens", ag.origens, s1, "Receita");
+}
+
+$("tvAtualizar").onclick = atualizarDaFolha;
+$("tvLogin").onclick = () => {
+  if (contaGoogle()) return sairGoogle();
+  $("gEmail").value = store.get("google_email", ""); $("dlgGoogle").showModal(); $("gEmail").focus();
+};
+$("gCancelar").onclick = () => $("dlgGoogle").close();
+$("gContinuar").onclick = () => {   // o clique aqui abre a janela de login (os browsers só deixam abrir janelas após um clique)
+  const email = $("gEmail").value.trim(); store.set("google_email", email);
+  $("dlgGoogle").close(); entrarComGoogle(email);
+};
+$("gEmail").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); $("gContinuar").click(); } });
+atualizarBotaoLogin();
+$("tvFicheiro").onchange = e => { const f = e.target.files[0]; if (f) importarExcel(f); e.target.value = ""; };
+$("tvInvest").onchange = renderTvde;
+$("tvPeriodos").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  tvPeriodo = b.dataset.p;
+  document.querySelectorAll("#tvPeriodos .chip").forEach(c => c.classList.toggle("on", c === b));
+  renderTvde();
+});
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!$("viewTvde").classList.contains("hidden")) renderTvde(); });
+
+
+/* ================== REGISTAR MOVIMENTO (aba Tesla 3) ================== */
+const RG = { VIATURA: "Tesla 3", SEMANA1: "2026-05-11",
+  ENTRADAS: ["UBER", "BOLT", "PRIVADO"], SAIDAS: ["COMBUSTIVEL", "Via Verde", "PNEU", "Lavagem", "Seguro", "Manutenção", "Impostos", "Estacionamento"] };
+let rgTipo = "Entrada", rgTipoManual = false, rgOcupado = false;
+let rgRegistos = store.get("rg_registos", []);
+
+const hojeISO = () => { const d = new Date(); return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; };
+function rgSemana(iso){
+  const linhas = (tvDados && tvDados.viaturas && (tvDados.viaturas[RG.VIATURA] || [])) || [];
+  const datas = linhas.map(l => dataISO(l[0])).filter(Boolean).sort();
+  const base = new Date(inicioSemana(datas[0] || RG.SEMANA1) + "T12:00"), d = new Date(iso + "T12:00");
+  return Math.floor((d - base) / (7 * 864e5)) + 1;
+}
+function rgDefinirTipo(t, manual){
+  rgTipo = t; if (manual) rgTipoManual = true;
+  document.querySelectorAll("#rgTipo button").forEach(b => { const on = b.dataset.tipo === t; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
+  rgPrevia();
+}
+function rgValor(){ const v = parseFloat(String($("rgValor").value).replace(",", ".")); return isFinite(v) ? v : NaN; }
+function rgPrevia(){
+  const v = rgValor(), iso = $("rgData").value || hojeISO(), desc = $("rgDesc").value.trim();
+  const sinal = rgTipo === "Saída" ? -1 : 1, d = new Date(iso + "T12:00");
+  const celulas = [
+    ["SEMANA", isNaN(d) ? "–" : rgSemana(iso), true], ["DATA", isNaN(d) ? "–" : d.toLocaleDateString("pt-PT"), true],
+    ["TIPO", rgTipo, true], ["DESCRIÇÃO", desc || "–"], ["VALOR", isFinite(v) && v !== 0 ? (sinal * Math.abs(v)).toLocaleString("pt-PT", { minimumFractionDigits: 2 }) + " €" : "–"],
+    ["MÊS", isNaN(d) ? "–" : d.getMonth() + 1, true], ["ANO", isNaN(d) ? "–" : d.getFullYear(), true], ["QUEM", $("rgQuem").value]];
+  const el = $("rgPrevia"); el.innerHTML = "";
+  celulas.forEach(([k, val, auto]) => { const c = document.createElement("div"); if (auto) c.className = "auto";
+    const s = document.createElement("span"); s.textContent = k; const b = document.createElement("b"); b.textContent = val; c.append(s, b); el.appendChild(c); });
+}
+function rgMsg(t, tipo){ const m = $("rgMsg"); m.textContent = t; m.className = "msg " + (tipo || ""); }
+function rgListaDescricoes(){
+  const usadas = ((tvDados && tvDados.viaturas && tvDados.viaturas[RG.VIATURA]) || []).map(l => String(l[2] || "").trim()).filter(Boolean);
+  const todas = [...new Set([...RG.ENTRADAS, ...RG.SAIDAS, ...usadas])];
+  $("rgListaDesc").innerHTML = ""; todas.forEach(t => { const o = document.createElement("option"); o.value = t; $("rgListaDesc").appendChild(o); });
+}
+function rgRenderLista(){
+  const tb = $("rgLista"); tb.innerHTML = "";
+  $("rgVazio").classList.toggle("hidden", rgRegistos.length > 0);
+  [...rgRegistos].reverse().forEach((r, i) => {
+    const tr = document.createElement("tr");
+    [[r.linha], [new Date(r.data + "T12:00").toLocaleDateString("pt-PT")], [r.tipo], [r.descricao], [eur(r.valor), "n"]].forEach(([v, c]) => {
+      const td = document.createElement("td"); td.textContent = v; if (c) td.className = c; tr.appendChild(td); });
+    const td = document.createElement("td");
+    if (i === 0){ const b = document.createElement("button"); b.className = "btn btn-ghost btn-sm"; b.style.height = "32px"; b.textContent = "Anular";
+      b.onclick = () => rgAnular(r); td.appendChild(b); }
+    tr.appendChild(td); tb.appendChild(tr);
+  });
+}
+async function rgEnviar(corpo){
+  const r = await fetch(scriptUrl(), { method: "POST", body: JSON.stringify(Object.assign({ token: scriptToken() }, corpo)) });
+  const t = await r.text(); let j;
+  try{ j = JSON.parse(t); }catch(e){ throw new Error("resposta inesperada do servidor (o script foi publicado com a versão mais recente?)"); }
+  if (j.erro) throw new Error(j.erro);
+  return j;
+}
+function rgAplicarLocal(r, remover){
+  if (!tvDados || !tvDados.viaturas) return;
+  const chave = Object.keys(tvDados.viaturas).find(k => nomeViatura(k) === RG.VIATURA); if (!chave) return;
+  const linhas = tvDados.viaturas[chave];
+  if (remover){ const i = linhas.findIndex(l => dataISO(l[0]) === r.data && String(l[2]).trim() === r.descricao && Math.abs(numPT(l[3]) - r.valor) < 0.005); if (i >= 0) linhas.splice(i, 1); }
+  else linhas.push([r.data, r.tipo, r.descricao, r.valor, r.quem]);
+  store.set("tvde_cache", tvDados); renderTvde();
+}
+async function rgGravar(){
+  if (rgOcupado) return;
+  const desc = $("rgDesc").value.trim(), v = rgValor(), data = $("rgData").value;
+  if (!desc) return rgMsg("Escreva a descrição.", "err");
+  if (!isFinite(v) || v === 0) return rgMsg("Indique um valor diferente de zero.", "err");
+  if (!data) return rgMsg("Escolha a data.", "err");
+  if (!scriptUrl() || !scriptToken()) return rgMsg("Falta o URL do script e o código de acesso em ⚙️ Definições.", "err");
+  rgOcupado = true; const b = $("rgGravar"); b.disabled = true; b.textContent = "A gravar na folha… (10 a 20 s)"; rgMsg("");
+  try{
+    const r = await rgEnviar({ acao: "adicionar", descricao: desc, valor: Math.abs(v), tipo: rgTipo, data, quem: $("rgQuem").value });
+    rgRegistos.push(r); if (rgRegistos.length > 30) rgRegistos = rgRegistos.slice(-30); store.set("rg_registos", rgRegistos);
+    rgRenderLista(); rgAplicarLocal(r);
+    rgMsg(`Gravado na linha ${r.linha}: ${r.tipo} · ${r.descricao} · ${eur(r.valor)} · semana ${r.semana}.`, "ok");
+    $("rgDesc").value = ""; $("rgValor").value = ""; rgTipoManual = false; rgDefinirTipo("Entrada"); $("rgDesc").focus();
+  }catch(e){ rgMsg("Não foi gravado: " + (e.message || e), "err"); }
+  finally{ rgOcupado = false; b.disabled = false; b.textContent = "Gravar na folha"; }
+}
+async function rgAnular(r){
+  if (rgOcupado) return;
+  if (!confirm(`Anular o registo da linha ${r.linha} (${r.descricao}, ${eur(r.valor)})? A linha fica vazia na folha.`)) return;
+  rgOcupado = true; rgMsg("A anular…");
+  try{
+    await rgEnviar({ acao: "anular", linha: r.linha, data: r.data, valor: r.valor, descricao: r.descricao });
+    rgRegistos = rgRegistos.filter(x => x !== r); store.set("rg_registos", rgRegistos);
+    rgRenderLista(); rgAplicarLocal(r, true); rgMsg(`Linha ${r.linha} anulada.`, "ok");
+  }catch(e){ rgMsg("Não foi anulado: " + (e.message || e), "err"); }
+  finally{ rgOcupado = false; }
+}
+function rgMostrar(sub){
+  document.querySelectorAll("#tvSubtabs .subtab").forEach(b => b.classList.toggle("on", b.dataset.sub === sub));
+  ["tvPainel", "tvRegistar", "tvLucros"].forEach(id => $(id).classList.toggle("hidden", id !== sub));
+  if (sub === "tvLucros") lcAbrir();
+  if (sub === "tvRegistar"){
+    if (!$("rgData").value) $("rgData").value = hojeISO();
+    $("rgAvisoGoogle").classList.toggle("hidden", !contaGoogle());
+    rgListaDescricoes(); rgPrevia(); rgRenderLista();
+  }
+}
+document.querySelectorAll("#tvSubtabs .subtab").forEach(b => b.onclick = () => rgMostrar(b.dataset.sub));
+document.querySelectorAll("#rgTipo button").forEach(b => b.onclick = () => rgDefinirTipo(b.dataset.tipo, true));
+$("rgDesc").addEventListener("input", () => {
+  const d = semAcento($("rgDesc").value.trim());
+  if (!rgTipoManual && d){
+    if (RG.SAIDAS.some(s => semAcento(s) === d) || /combust|gasol|gasoleo|via verde|portag|pneu|lavag|seguro|manut|revis|imposto|estacion|parqu|carregamento/.test(d)) rgDefinirTipo("Saída");
+    else if (RG.ENTRADAS.some(s => semAcento(s) === d)) rgDefinirTipo("Entrada");
+  }
+  rgPrevia();
+});
+$("rgValor").addEventListener("input", () => { if (rgValor() < 0){ rgDefinirTipo("Saída", true); } rgPrevia(); });
+["rgData", "rgQuem"].forEach(id => $(id).addEventListener("input", rgPrevia));
+["rgDesc", "rgValor"].forEach(id => $(id).addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); rgGravar(); } }));
+$("rgGravar").onclick = rgGravar;
+
+
+
+/* ================== DIVISÃO DO LUCRO E REGISTO DE LUCRO SEMANAL ================== */
+const SOCIOS = { nuno: "Nuno Cardoso", bruno: "Bruno Pinto", outros: "Outros / sem QUEM" };
+const socioDe = q => { const s = semAcento(q).trim(); return s === "off" ? "nuno" : s === "bp" ? "bruno" : "outros"; };
+const metade = v => Math.round(v * 50) / 100;
+function lucrosRegistados(){   // { "2026-10-12": { valor, obs, semana, linha } }
+  const m = {};
+  ((tvDados && tvDados.lucros) || []).forEach(([ini, valor, obs, semana, linha]) => { const d = dataISO(ini); if (d) m[inicioSemana(d)] = { valor: +valor || 0, obs: obs || "", semana, linha }; });
+  return m;
+}
+function renderDivisao(ag){
+  const reg = tvViatura === "todas" ? lucrosRegistados() : {};
+  const linhasDv = ag.semanas.map(s => { const calc = s.receita - s.despesa, r = reg[s.k];
+    return { k: s.k, calc, reg: r ? r.valor : null, usar: r ? r.valor : calc }; });
+  const total = linhasDv.reduce((a, l) => a + l.usar, 0), nReg = linhasDv.filter(l => l.reg !== null).length;
+  $("dvTotal").textContent = eurK(total); $("dvTotal").className = total >= 0 ? "pos" : "neg";
+  $("dvFonte").textContent = nReg ? `${nReg} de ${linhasDv.length} semanas com lucro registado` : "lucro calculado (receitas − despesas)";
+  $("dvNuno").textContent = eurK(metade(total)); $("dvBruno").textContent = eurK(metade(total));
+  const nSem = Math.max(linhasDv.length, 1);
+  $("dvNunoSem").textContent = $("dvBrunoSem").textContent = `${eur(metade(total) / nSem)} por semana (média)`;
+
+  const tq = $("dvTabQuem"); tq.innerHTML = "";
+  ["nuno", "bruno", "outros"].forEach(k => { const s = ag.soc[k]; if (k === "outros" && !s.receita && !s.despesa) return;
+    const fica = s.receita - s.despesa, tr = document.createElement("tr");
+    [[SOCIOS[k] + (k === "nuno" ? " (Off)" : k === "bruno" ? " (bp)" : "")], [eur(s.receita), 1], [eur(s.despesa), 1], [eur(fica), 1, fica >= 0 ? "pos" : "neg"], [k === "outros" ? "–" : eur(metade(total)), 1]]
+      .forEach(([v, n, c]) => { const td = document.createElement("td"); td.textContent = v; if (n) td.className = "n"; if (c) td.classList.add(c); tr.appendChild(td); });
+    tq.appendChild(tr); });
+  const fN = ag.soc.nuno.receita - ag.soc.nuno.despesa, fB = ag.soc.bruno.receita - ag.soc.bruno.despesa, dif = (fN - fB) / 2;
+  const outros = ag.soc.outros.receita - ag.soc.outros.despesa;
+  $("dvAcerto").innerHTML = "";
+  const p = document.createElement("b");
+  p.textContent = Math.abs(dif) < 0.005 ? "Acerto: Nuno e Bruno ficaram com o mesmo valor neste período."
+    : dif > 0 ? `Acerto: Nuno Cardoso entrega ${eur(dif)} ao Bruno Pinto para ficarem 50/50.` : `Acerto: Bruno Pinto entrega ${eur(-dif)} ao Nuno Cardoso para ficarem 50/50.`;
+  $("dvAcerto").appendChild(p);
+  if (Math.abs(outros) >= 0.005) $("dvAcerto").append(` (O acerto só conta o dinheiro que passou pelo Nuno e pelo Bruno; há ${eur(outros)} em movimentos de outras pessoas ou sem QUEM.)`);
+
+  const ts = $("dvTabSemanas"); ts.innerHTML = "";
+  [...linhasDv].reverse().forEach(l => { const tr = document.createElement("tr");
+    [[semanaLonga(l.k)], [eur(l.calc), 1], [l.reg === null ? "–" : eur(l.reg), 1], [eur(metade(l.usar)), 1], [eur(metade(l.usar)), 1]]
+      .forEach(([v, n]) => { const td = document.createElement("td"); td.textContent = v; if (n) td.className = "n"; tr.appendChild(td); });
+    ts.appendChild(tr); });
+}
+
+let lcOcupado = false;
+const segundaDe = iso => inicioSemana(iso);
+const maisDias = (iso, n) => { const d = new Date(iso + "T12:00"); d.setDate(d.getDate() + n); return dataISO(d); };
+const numSemana = ini => Math.floor((new Date(ini + "T12:00") - new Date(inicioSemana(RG.SEMANA1) + "T12:00")) / (7 * 864e5)) + 1;
+const curta = iso => new Date(iso + "T12:00").toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" });
+function lcValor(){ const v = parseFloat(String($("lcValor").value).replace(",", ".")); return isFinite(v) ? Math.round(v * 100) / 100 : NaN; }
+function lcCalculado(ini){   // lucro da semana a partir das entradas e saídas (todas as viaturas, sem compra de viaturas)
+  if (!tvDados || !tvDados.viaturas) return null;
+  const mov = normalizarTvde(tvDados.viaturas).mov.filter(m => !m.invest && inicioSemana(m.data) === ini);
+  if (!mov.length) return null;
+  return Math.round(mov.reduce((s, m) => s + (m.tipo === "receita" ? m.valor : -m.valor), 0) * 100) / 100;
+}
+function lcMsg(t, tipo){ const m = $("lcMsg"); m.textContent = t; m.className = "msg " + (tipo || ""); }
+function lcPrevia(){
+  const iso = $("lcSemana").value, v = lcValor();
+  const ini = iso ? segundaDe(iso) : null, fim = ini ? maisDias(ini, 6) : null;
+  $("lcSemanaTxt").textContent = ini ? `Semana ${numSemana(ini)}: ${curta(ini)} – ${curta(fim)}` : "";
+  const reg = ini ? lucrosRegistados()[ini] : null;
+  if (reg) $("lcSemanaTxt").textContent += ` · já registado: ${eur(reg.valor)}`;
+  const calc = ini ? lcCalculado(ini) : null, sb = $("lcSugestao");
+  sb.hidden = calc === null; if (calc !== null){ sb.textContent = `Usar lucro calculado: ${eur(calc)}`; sb.dataset.v = calc; }
+  const ok = isFinite(v), f = d => d ? new Date(d + "T12:00").toLocaleDateString("pt-PT") : "–";
+  const celulas = [["SEMANA", ini ? numSemana(ini) : "–", true], ["INÍCIO", f(ini), true], ["FIM", f(fim), true],
+    ["VALOR GANHO", ok ? eur(v) : "–"], ["NUNO CARDOSO", ok ? eur(metade(v)) : "–", true], ["BRUNO PINTO", ok ? eur(metade(v)) : "–", true]];
+  const el = $("lcPrevia"); el.innerHTML = "";
+  celulas.forEach(([k, val, auto]) => { const c = document.createElement("div"); if (auto) c.className = "auto";
+    const s = document.createElement("span"); s.textContent = k; const b = document.createElement("b"); b.textContent = val; c.append(s, b); el.appendChild(c); });
+}
+function lcRenderLista(){
+  const reg = lucrosRegistados(), chaves = Object.keys(reg).sort().reverse(), tb = $("lcLista"); tb.innerHTML = "";
+  $("lcVazio").classList.toggle("hidden", chaves.length > 0);
+  const total = chaves.reduce((s, k) => s + reg[k].valor, 0);
+  $("lcTotal").textContent = chaves.length ? eurK(total) : "–";
+  $("lcTotalSem").textContent = chaves.length ? `${chaves.length} semana${chaves.length > 1 ? "s" : ""} · média ${eur(total / chaves.length)}` : "";
+  $("lcNuno").textContent = chaves.length ? eurK(metade(total)) : "–"; $("lcBruno").textContent = chaves.length ? eurK(metade(total)) : "–";
+  chaves.forEach(k => { const r = reg[k], tr = document.createElement("tr");
+    [[r.semana || numSemana(k)], [`${curta(k)} – ${curta(maisDias(k, 6))}`], [eur(r.valor), "n"], [eur(metade(r.valor)), "n"], [eur(metade(r.valor)), "n"], [r.obs]]
+      .forEach(([v, c]) => { const td = document.createElement("td"); td.textContent = v; if (c) td.className = c; tr.appendChild(td); });
+    const td = document.createElement("td");
+    if (r.linha){ const b = document.createElement("button"); b.className = "btn btn-ghost btn-sm"; b.style.height = "32px"; b.textContent = "Apagar";
+      b.onclick = () => lcAnular(k, r); td.appendChild(b); }
+    tr.appendChild(td); tb.appendChild(tr); });
+}
+function lcAplicarLocal(ini, r, remover){
+  if (!tvDados) return;
+  tvDados.lucros = (tvDados.lucros || []).filter(l => inicioSemana(dataISO(l[0]) || "1970-01-05") !== ini);
+  if (!remover) tvDados.lucros.push([ini, r.valor, r.obs || "", r.semana, r.linha]);
+  store.set("tvde_cache", tvDados); lcRenderLista(); lcPrevia(); renderTvde();
+}
+async function lcGravar(substituir){
+  if (lcOcupado) return;
+  const iso = $("lcSemana").value, v = lcValor(), obs = $("lcObs").value.trim();
+  if (!iso) return lcMsg("Escolha a semana.", "err");
+  if (!isFinite(v)) return lcMsg("Indique o valor ganho na semana.", "err");
+  if (!scriptUrl() || !scriptToken()) return lcMsg("Falta o URL do script e o código de acesso em ⚙️ Definições.", "err");
+  lcOcupado = true; const b = $("lcGravar"); b.disabled = true; b.textContent = "A gravar na folha… (10 a 20 s)"; lcMsg("");
+  let repetir = false;
+  try{
+    const r = await rgEnviar({ acao: "lucro", semana: segundaDe(iso), valor: v, obs, substituir: substituir === true });
+    if (r.existe){
+      repetir = confirm(`A semana ${r.semana} (${curta(r.inicio)} – ${curta(r.fim)}) já tem ${eur(r.valorAtual)} registado na linha ${r.linha}.\n\nSubstituir por ${eur(v)}?`);
+      if (!repetir) lcMsg("Não foi gravado: a semana já tinha lucro registado.", "err");
+    } else {
+      lcAplicarLocal(r.inicio, r);
+      lcMsg(`${r.substituido ? "Substituído" : "Gravado"} na linha ${r.linha} da aba "Lucros Semanais": semana ${r.semana} · ${eur(r.valor)} → Nuno ${eur(r.nuno)} · Bruno ${eur(r.bruno)}.`, "ok");
+      $("lcValor").value = ""; $("lcObs").value = ""; lcPrevia();
+    }
+  }catch(e){ lcMsg("Não foi gravado: " + (e.message || e), "err"); }
+  finally{ lcOcupado = false; b.disabled = false; b.textContent = "Gravar lucro na folha"; }
+  if (repetir) return lcGravar(true);
+}
+async function lcAnular(ini, r){
+  if (lcOcupado) return;
+  if (!confirm(`Apagar o lucro da semana ${r.semana || numSemana(ini)} (${curta(ini)}, ${eur(r.valor)}) da aba "Lucros Semanais"? A linha ${r.linha} fica vazia.`)) return;
+  lcOcupado = true; lcMsg("A apagar…");
+  try{
+    await rgEnviar({ acao: "anularLucro", linha: r.linha, inicio: ini, valor: r.valor });
+    lcAplicarLocal(ini, r, true); lcMsg(`Lucro da semana ${r.semana || numSemana(ini)} apagado.`, "ok");
+  }catch(e){ lcMsg("Não foi apagado: " + (e.message || e), "err"); }
+  finally{ lcOcupado = false; }
+}
+function lcAbrir(){
+  if (!$("lcSemana").value) $("lcSemana").value = maisDias(segundaDe(hojeISO()), -7);   // por defeito: a última semana completa
+  $("lcAvisoGoogle").classList.toggle("hidden", !contaGoogle());
+  lcPrevia(); lcRenderLista();
+}
+$("lcSemana").addEventListener("input", lcPrevia);
+$("lcValor").addEventListener("input", lcPrevia);
+$("lcSugestao").onclick = () => { $("lcValor").value = $("lcSugestao").dataset.v; lcPrevia(); $("lcValor").focus(); };
+["lcValor", "lcObs"].forEach(id => $(id).addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); lcGravar(); } }));
+$("lcGravar").onclick = () => lcGravar();
+
+/* ================== ENVIAR FATURAS PARA O GOOGLE DRIVE ================== */
+const FAT = { MAX_MB: 20, MIMES: { pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", heic: "image/heic", heif: "image/heif", webp: "image/webp" } };
+let fatOcupado = false;
+function fatMime(f){
+  const ext = (f.name.split(".").pop() || "").toLowerCase();
+  if (f.type && /^(application\/pdf|image\/(jpeg|png|heic|heif|webp))$/.test(f.type)) return f.type;
+  return FAT.MIMES[ext] || "";
+}
+const fatLer = f => new Promise((ok, erro) => { const r = new FileReader();
+  r.onload = () => ok(String(r.result).split(",")[1] || ""); r.onerror = () => erro(new Error("não foi possível ler o ficheiro")); r.readAsDataURL(f); });
+function fatLinha(nome){
+  const d = document.createElement("div"), n = document.createElement("span"), e = document.createElement("span");
+  n.className = "nome"; n.textContent = nome; e.className = "est"; e.textContent = "à espera";
+  d.append(n, e); $("fatLista").appendChild(d); return e;
+}
+function fatListar(){
+  $("fatLista").innerHTML = "";
+  [...$("fatFicheiros").files].forEach(f => { const e = fatLinha(f.name); e.textContent = f.size < 1048576 ? Math.max(1, Math.round(f.size / 1024)) + " KB" : (f.size / 1048576).toLocaleString("pt-PT", { maximumFractionDigits: 1 }) + " MB"; });
+}
+async function fatEnviar(){
+  if (fatOcupado) return;
+  const ficheiros = [...$("fatFicheiros").files];
+  if (!ficheiros.length){ $("fatLista").innerHTML = ""; fatLinha("Escolha pelo menos um ficheiro.").className = "est err"; return; }
+  if (!scriptUrl() || !scriptToken()){ $("fatLista").innerHTML = ""; fatLinha("Falta o URL do script e o código de acesso em ⚙️ Definições.").className = "est err"; return; }
+  fatOcupado = true; const b = $("fatEnviar"); b.disabled = true; b.textContent = "A enviar…";
+  $("fatLista").innerHTML = "";
+  let ok = 0;
+  for (const f of ficheiros){
+    const est = fatLinha(f.name);
+    try{
+      const mime = fatMime(f);
+      if (!mime) throw new Error("só PDF ou imagens");
+      if (f.size > FAT.MAX_MB * 1048576) throw new Error("mais de " + FAT.MAX_MB + " MB");
+      est.textContent = "a enviar…";
+      const j = await rgEnviar({ acao: "upload", nome: f.name, mime, data: $("fatData").value, dados: await fatLer(f) });
+      est.textContent = ""; est.className = "est ok";
+      const a = document.createElement("a"); a.href = j.url; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = (j.jaExistia ? "✓ já estava em " : "✓ guardado em ") + j.pasta;
+      est.appendChild(a); ok++;
+    }catch(e){ est.textContent = "✗ " + (e.message || e); est.className = "est err"; }
+  }
+  fatOcupado = false; b.disabled = false; b.textContent = "Enviar";
+  if (ok === ficheiros.length) $("fatFicheiros").value = "";
+}
+$("tvFatura").onclick = () => { if (!$("fatData").value) $("fatData").value = hojeISO(); $("fatLista").innerHTML = ""; $("dlgFatura").showModal(); };
+$("fatFechar").onclick = () => { if (!fatOcupado) $("dlgFatura").close(); };
+$("fatFicheiros").onchange = fatListar;
+$("fatEnviar").onclick = fatEnviar;
+
+/* ================== DEFINIÇÕES ================== */
+$("btnConfig").onclick = () => { $("cfgKey").value = apiKey(); $("cfgWhats").value = whatsNum();
+  $("cfgScript").value = scriptUrl(); $("cfgToken").value = scriptToken(); $("cfgFolha").value = store.get("cfg_folha", ""); $("dlg").showModal(); };
+$("dlgCancel").onclick = () => $("dlg").close();
+$("dlgSave").onclick = () => {
+  const novaChave = $("cfgKey").value.trim(), mudou = novaChave !== apiKey();
+  store.set("cfg_key", novaChave); store.set("cfg_whats", $("cfgWhats").value.trim());
+  store.set("cfg_script", $("cfgScript").value.trim()); store.set("cfg_token", $("cfgToken").value.trim());
+  store.set("cfg_folha", $("cfgFolha").value.trim());
+  $("dlg").close();
+  if (mudou) location.reload();
+};
+
+/* ================== ARRANQUE ================== */
+(function init(){
+  const hoje = new Date(); hoje.setMinutes(hoje.getMinutes() - hoje.getTimezoneOffset());
+  $("data").min = hoje.toISOString().slice(0,10);
+  ligarAutocomplete("origem", "sug-origem");
+  ligarAutocomplete("destino", "sug-destino");
+  $("btnCalc").onclick = calcular;
+  renderLista();
+  renderDash();
+  carregarGoogle();
+})();
+</script>
+</body>
+</html>
