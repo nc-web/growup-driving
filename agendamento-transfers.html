@@ -230,8 +230,8 @@
 </style>
 </head>
 <body>
-<script>/* Site público (GitHub Pages): só o pedido de transfer para clientes. A versão de gestão abre com ?gestao (ver gestao.html) */
-if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(location.search + location.hash)) document.documentElement.classList.add("publico");</script>
+<script>/* Site público (GitHub Pages): o Dashboard TVDE não aparece aqui; tem link próprio (gestao.html → dashboard-tvde.html?gestao) */
+if (/(^|\.)github\.io$/.test(location.hostname)) document.documentElement.classList.add("publico");</script>
 
 <header>
   <div class="facetas" aria-hidden="true"><svg viewBox="0 0 380 200" preserveAspectRatio="none"><polygon points="70,0 380,0 380,200 70,200 130,100" fill="#c8141f"/><polygon points="120,0 380,0 250,70" fill="#e31b2b"/><polygon points="250,70 380,0 380,110" fill="#a50f18"/><polygon points="130,100 250,70 300,120" fill="#f0404b"/><polygon points="130,100 300,120 380,110 380,200 200,200" fill="#d4161f"/><polygon points="200,200 380,200 380,150" fill="#9b0e16"/><polygon points="58,0 66,0 126,100 66,200 58,200 118,100" fill="#e31b2b"/></svg></div>
@@ -240,12 +240,12 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
       <div class="marca"><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="#e31b2b" stroke-width="7"/><path d="M22 80 C34 70 44 56 56 42 L66 31" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/><path d="M25 77 C36 68 45 56 56 43 L63 35" fill="none" stroke="#1a1d25" stroke-width="2" stroke-dasharray="5 4"/><path d="M58 24 L80 18 L74 40 Z" fill="#e31b2b"/></svg><div class="wm"><b>Grow<em>uP</em></b><span>DRIVING</span></div></div>
       <div class="titulo"><h1>Transfers · Agendamento de viagens</h1><p>Agende o seu transfer ou viagem privada</p></div>
     </div>
-    <button class="icon-btn so-interno" id="btnConfig" title="Definições">⚙️ Definições</button>
+    <button class="icon-btn" id="btnConfig" title="Definições">⚙️ Definições</button>
   </div>
-  <nav class="tabs so-interno">
+  <nav class="tabs">
     <button class="tab on" data-view="viewAgendar">Agendar</button>
     <button class="tab" data-view="viewDash">Transfers</button>
-    <button class="tab" data-view="viewTvde">Dashboard TVDE</button>
+    <button class="tab so-interno" data-view="viewTvde">Dashboard TVDE</button>
   </nav>
 </header>
 
@@ -321,13 +321,13 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
         <small id="detalhe">Até 5 km: 5,00 € · cada km a mais: +0,80 €</small>
       </div>
       <div class="gap">
-        <button class="btn btn-accent so-interno" id="btnAgendar" disabled>Confirmar agendamento</button>
+        <button class="btn btn-accent" id="btnAgendar" disabled>Confirmar agendamento</button>
         <button class="btn btn-ghost" id="btnWhats" disabled>Enviar por WhatsApp</button>
       </div>
       <div class="tabela" id="fonte"></div>
     </div>
 
-    <div class="card so-interno">
+    <div class="card">
       <h2>Agendamentos</h2>
       <div class="cal-topo"><a class="btn btn-ghost btn-sm" href="reserva.html" target="_blank" rel="noopener" style="text-decoration:none">🗓️ Página dos clientes (horários ocupados)</a><button class="btn btn-ghost btn-sm" id="btnSync" title="Publica na página dos clientes os agendamentos futuros que ainda não foram publicados">☁️ Publicar agendamentos</button></div>
       <div class="list" id="lista"><div class="tabela">Ainda sem agendamentos.</div></div>
@@ -869,15 +869,6 @@ async function sincronizarTodos(){
   mostrar(ainda ? `${ainda} agendamento(s) não foram publicados. Confirme o código de acesso em ⚙️ Definições.` : "Agendamentos publicados para os clientes.", ainda ? "err" : "ok");
 }
 $("btnSync").onclick = sincronizarTodos;
-
-/* ================== SITE PÚBLICO ================== */
-// No GitHub Pages a página serve só para os clientes pedirem transfers: sem lista de agendamentos,
-// sem separadores Transfers / Dashboard TVDE e sem Definições (continuam nos ficheiros do PC).
-const PUBLICO = document.documentElement.classList.contains("publico");
-if (PUBLICO){
-  const w = $("btnWhats"); w.className = "btn btn-accent"; w.textContent = "Pedir transfer por WhatsApp";
-  const p = document.querySelector("header .titulo p"); if (p) p.textContent = "Peça o seu transfer ou viagem privada";
-}
 
 /* ================== AGENDAMENTOS ================== */
 let agendamentos = store.get("agendamentos", []);

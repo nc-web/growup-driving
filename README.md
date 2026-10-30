@@ -8,8 +8,8 @@ Ferramentas web da GrowuP Driving (TVDE e transfers), feitas em HTML/JavaScript 
 
 | Ficheiro | O que faz |
 |---|---|
-| `index.html` | Página inicial para clientes (pedir transfer e reservas) |
-| `gestao.html` | Página de gestão: abre o agendamento completo e o Dashboard TVDE (`?gestao`) |
+| `index.html` | Página inicial (transfers e reservas) |
+| `gestao.html` | Página de gestão: transfers e Dashboard TVDE (`dashboard-tvde.html?gestao`) |
 | `reserva.html` | Página dos clientes: horários ocupados e detalhes do próprio transfer |
 | `agendamento-transfers.html` | Agendamento de transfers: distância, preço e mapa do percurso com OpenStreetMap (5 € até 5 km, +0,80 €/km), lista de agendamentos, dashboard de transfers, link para o Google Calendar e separador Dashboard TVDE |
 | `dashboard-tvde.html` | Dashboard TVDE: receitas/despesas por semana, gráficos, divisão do lucro 50/50 (Nuno Cardoso / Bruno Pinto), registo de movimentos, registo de lucro semanal e envio de faturas |
