@@ -27,3 +27,11 @@ Ferramentas web da GrowuP Driving (TVDE e transfers), feitas em HTML/JavaScript 
 ## Desenvolvimento
 
 Não há build: os ficheiros HTML abrem diretamente no Chrome ou no Edge. As bibliotecas (Chart.js, SheetJS) vêm do cdnjs.
+
+## Trabalhar com o Claude Code
+O repositório está preparado para o Claude Code:
+- `CLAUDE.md` — instruções e contexto do projeto (lidas automaticamente);
+- `docs/historico.md` — histórico dos pedidos e decisões;
+- `.claude/commands/` — comandos: `/publicar-script`, `/testar`, `/mudar-preco`.
+
+Abrir em https://claude.ai/code escolhendo o repositório `nc-web/growup-driving`, ou no PC: `git clone https://github.com/nc-web/growup-driving` e `claude` dentro da pasta.
