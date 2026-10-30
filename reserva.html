@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1a1d25">
+<title>Reservas GrowuP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#e31b2b;--bg:#15181f;--card:#1c2029;--ink:#f3f4f6;--muted:#a3aab8;--line:#2c323e;
+        --stripes:repeating-linear-gradient(135deg,rgba(255,255,255,.028) 0 2px,transparent 2px 14px);color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg) var(--stripes);color:var(--ink);font:16px/1.5 "Montserrat",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+  header{position:relative;overflow:hidden;background:#1a1d25 var(--stripes);border-bottom:3px solid var(--red);padding:48px 16px 56px}
+  .facetas{position:absolute;right:0;top:0;height:100%;width:min(38vw,440px)}
+  .facetas svg{width:100%;height:100%;display:block}
+  @media(max-width:700px){.facetas{width:120px;opacity:.5}}
+  .wrap{position:relative;z-index:2;max-width:960px;margin:0 auto}
+  .marca{display:flex;align-items:center;gap:18px}
+  .marca svg{width:78px;height:78px;flex:none}
+  .wm b{display:block;font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1}
+  .wm b em{font-style:normal;color:var(--red)}
+  .wm span{display:block;font-size:14px;font-weight:600;letter-spacing:.55em;margin-top:8px}
+  .lema{margin:28px 0 0;color:#d4d8e0;font-size:14px;letter-spacing:.3em;text-transform:uppercase}
+  .lema::before{content:"";display:block;width:64px;height:3px;background:var(--red);margin-bottom:16px}
+  main{flex:1;max-width:960px;width:100%;margin:-28px auto 40px;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr;align-content:start;position:relative;z-index:3}
+  @media(min-width:760px){main{grid-template-columns:1fr 1fr}}
+  a.app{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--red);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:transform .15s,border-color .15s}
+  a.app:hover{transform:translateY(-2px);border-color:var(--red)}
+  a.app h2{margin:0 0 8px;font-size:15px;letter-spacing:.22em;text-transform:uppercase}
+  a.app h2::after{content:"";display:block;width:40px;height:2px;background:var(--red);margin-top:8px}
+  a.app p{margin:0 0 16px;color:var(--muted);font-size:14px}
+  a.app span{display:inline-block;background:var(--red);color:#fff;font-weight:700;border-radius:10px;padding:10px 16px;font-size:14px}
+  .nota{grid-column:1/-1;color:var(--muted);font-size:13px;text-align:center}
+  footer{text-align:center;color:#7d8696;font-size:12px;letter-spacing:.2em;padding:0 16px 28px}
+  footer a{color:#c2c7d0}
+
+  main{display:block;margin:-28px auto 40px}
+  .card{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--red);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.35);margin-bottom:16px}
+  .card h2{margin:0 0 14px;font-size:14px;letter-spacing:.22em;text-transform:uppercase}
+  .card h2::after{content:"";display:block;width:40px;height:2px;background:var(--red);margin-top:8px}
+  .estado{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:4px 12px;letter-spacing:.06em;text-transform:uppercase}
+  .e-agendada{background:rgba(245,165,36,.16);color:#fcd38a}
+  .e-concluida{background:rgba(34,197,94,.16);color:#a7f3c0}
+  .e-cancelada{background:#2a303b;color:#a3aab8}
+  .quando{font-size:26px;font-weight:800;margin:12px 0 4px}
+  .linhas{display:grid;gap:10px;margin-top:16px}
+  .linhas div{display:grid;grid-template-columns:110px 1fr;gap:10px;background:#232833;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px}
+  .linhas span{color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding-top:2px}
+  .preco b{color:#fff;font-size:18px}
+  .dias{display:grid;gap:8px}
+  .dia{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding:8px 0}
+  .dia:last-child{border-bottom:0}
+  .dia .nome{font-weight:600;font-size:14px}
+  .dia .nome small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+  .horas{display:flex;flex-wrap:wrap;gap:6px}
+  .ocup{background:rgba(227,27,43,.16);color:#ff9aa2;border:1px solid rgba(227,27,43,.4);border-radius:8px;padding:4px 10px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .livre{color:#86efac;font-size:13px}
+  .msg{color:var(--muted);font-size:14px}
+  .erro{color:#ffb4b4}
+  .contactos{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+  .contactos a{display:inline-flex;align-items:center;gap:8px;background:var(--red);color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:10px 16px;font-size:14px}
+  .contactos a.sec{background:transparent;border:1px solid #3a4250}
+  @media(max-width:560px){ .dia{grid-template-columns:1fr} .linhas div{grid-template-columns:1fr;gap:2px} }
+</style>
+</head>
+<body>
+<header>
+  <div class="facetas" aria-hidden="true"><svg viewBox="0 0 380 200" preserveAspectRatio="none"><polygon points="70,0 380,0 380,200 70,200 130,100" fill="#c8141f"/><polygon points="120,0 380,0 250,70" fill="#e31b2b"/><polygon points="250,70 380,0 380,110" fill="#a50f18"/><polygon points="130,100 250,70 300,120" fill="#f0404b"/><polygon points="130,100 300,120 380,110 380,200 200,200" fill="#d4161f"/><polygon points="200,200 380,200 380,150" fill="#9b0e16"/><polygon points="58,0 66,0 126,100 66,200 58,200 118,100" fill="#e31b2b"/></svg></div>
+  <div class="wrap">
+    <div class="marca">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="#e31b2b" stroke-width="7"/><path d="M22 80 C34 70 44 56 56 42 L66 31" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/><path d="M25 77 C36 68 45 56 56 43 L63 35" fill="none" stroke="#1a1d25" stroke-width="2" stroke-dasharray="5 4"/><path d="M58 24 L80 18 L74 40 Z" fill="#e31b2b"/></svg>
+      <div class="wm"><b>Grow<em>uP</em></b><span>DRIVING</span></div>
+    </div>
+    <p class="lema">Transfers · Reservas</p>
+  </div>
+</header>
+<main class="wrap" style="padding:0 16px">
+  <div class="card" id="cardReserva" hidden>
+    <h2>O seu transfer</h2>
+    <div id="reserva"><p class="msg">A carregar o seu agendamento…</p></div>
+  </div>
+  <div class="card">
+    <h2>Horários ocupados · próximos 14 dias</h2>
+    <p class="msg" style="margin:-4px 0 12px">As horas a vermelho já estão reservadas. Para marcar um transfer noutra hora, contacte-nos.</p>
+    <div class="dias" id="dias"><p class="msg">A carregar…</p></div>
+  </div>
+  <div class="card">
+    <h2>Marcar ou alterar</h2>
+    <div class="contactos">
+      <a href="tel:+351969259112">📞 969 259 112</a>
+      <a href="https://wa.me/351969259112" target="_blank" rel="noopener" class="sec">💬 WhatsApp</a>
+      <a href="https://www.instagram.com/growup_drive/" target="_blank" rel="noopener" class="sec">📷 @growup_drive</a>
+    </div>
+  </div>
+</main>
+<footer>Profissionalismo · Conforto · Qualidade</footer>
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlp7IcYvAkYdq5byDzlI_24mG9kBBYt9aphJ9WP0dUsQvS_Caz2Y2o5_V_39FTJi3e/exec";
+const DIAS = 14, ESTADOS = { agendada: "Agendada", concluida: "Concluída", cancelada: "Cancelada" };
+const $ = id => document.getElementById(id);
+const p2 = n => String(n).padStart(2, "0");
+const iso = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+const eur = n => Number(n).toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
+const fimDe = (hora, min) => { const [h, m] = hora.split(":").map(Number), t = h * 60 + m + min; return `${p2(Math.floor(t / 60) % 24)}:${p2(t % 60)}`; };
+function el(tag, attrs, ...filhos){ const e = document.createElement(tag); Object.assign(e, attrs || {}); filhos.forEach(f => e.append(f)); return e; }
+async function obter(q){
+  const r = await fetch(SCRIPT_URL + "?" + q); const j = await r.json();
+  if (j.erro) throw new Error(j.erro); return j;
+}
+async function mostrarReserva(c){
+  $("cardReserva").hidden = false;
+  const box = $("reserva");
+  try{
+    const r = await obter("modo=reserva&cod=" + encodeURIComponent(c));
+    const d = new Date(r.data + "T" + r.hora);
+    const linha = (k, v, cls) => el("div", cls ? { className: cls } : {}, el("span", { textContent: k }), el("b", { textContent: v }));
+    box.replaceChildren(
+      el("span", { className: "estado e-" + r.estado, textContent: ESTADOS[r.estado] || r.estado }),
+      el("div", { className: "quando", textContent: d.toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" }) + " · " + r.hora }),
+      el("div", { className: "msg", textContent: (r.nome ? "Olá " + r.nome + "! " : "") + (r.estado === "cancelada" ? "Este transfer foi cancelado." : r.estado === "concluida" ? "Obrigado por viajar connosco." : "O seu motorista estará no local de recolha à hora marcada.") }),
+      el("div", { className: "linhas" },
+        linha("Recolha", r.origem), linha("Chegada", r.destino),
+        linha("Distância", r.km.toLocaleString("pt-PT", { maximumFractionDigits: 1 }) + " km"),
+        linha("Passageiros", `${r.pax} pax · ${r.malas} malas`),
+        linha("Preço", eur(r.preco), "preco")));
+  }catch(e){ box.replaceChildren(el("p", { className: "msg erro", textContent: e.message || "Não foi possível carregar o agendamento." })); }
+}
+async function mostrarOcupados(){
+  const box = $("dias");
+  try{
+    const j = await obter("modo=ocupados"), porDia = {};
+    j.ocupados.forEach(o => (porDia[o.data] = porDia[o.data] || []).push(o));
+    const agora = new Date(), filhos = [];
+    for (let i = 0; i < DIAS; i++){
+      const d = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + i), k = iso(d);
+      const nome = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : d.toLocaleDateString("pt-PT", { weekday: "long" });
+      const lista = (porDia[k] || []);
+      filhos.push(el("div", { className: "dia" },
+        el("div", { className: "nome" }, nome.charAt(0).toUpperCase() + nome.slice(1), el("small", { textContent: d.toLocaleDateString("pt-PT", { day: "numeric", month: "long" }) })),
+        el("div", { className: "horas" }, ...(lista.length ? lista.map(o => el("span", { className: "ocup", textContent: `${o.hora}–${fimDe(o.hora, o.duracao)}` })) : [el("span", { className: "livre", textContent: "Sem reservas" })]))));
+    }
+    box.replaceChildren(...filhos);
+  }catch(e){ box.replaceChildren(el("p", { className: "msg erro", textContent: "Não foi possível carregar os horários. Tente mais tarde." })); }
+}
+const c = new URLSearchParams(location.search).get("c");
+if (c) mostrarReserva(c);
+mostrarOcupados();
+</script>
+</body>
+</html>

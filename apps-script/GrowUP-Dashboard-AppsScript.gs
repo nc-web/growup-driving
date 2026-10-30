@@ -25,6 +25,8 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.modo === 'login') return paginaLogin_(p);
   if (p.modo === 'recolher') return json_(recolher_(p.sessao));
+  if (p.modo === 'reserva') return publico_(() => reservaPublica_(p.cod));
+  if (p.modo === 'ocupados') return publico_(horariosOcupados_);
   if (p.token !== TOKEN) return json_({ erro: 'Token inválido' });
   try {
     const cache = CacheService.getScriptCache();
@@ -176,6 +178,8 @@ function doPost(e) {
     if (p.acao === 'adicionar') return json_(adicionarMovimento_(FILE_ID, p));
     if (p.acao === 'anular') return json_(anularMovimento_(FILE_ID, p));
     if (p.acao === 'upload') return json_(guardarFatura_(p));
+    if (p.acao === 'agendamento') return json_(guardarAgendamento_(p));
+    if (p.acao === 'removerAgendamento') return json_(removerAgendamento_(p));
     if (p.acao === 'lucro') return json_(registarLucro_(FILE_ID, p));
     if (p.acao === 'anularLucro') return json_(anularLucro_(FILE_ID, p));
     return json_({ erro: 'Ação desconhecida' });
@@ -535,6 +539,80 @@ function testarLucros() {
   }
 }
 
+/* ---------- Agendamentos de transfers (folha "GrowuP Transfers · Agendamentos") ---------- */
+const AGENDA_NOME = 'GrowuP Transfers · Agendamentos';
+const AGENDA_CAB = ['ID', 'CÓDIGO', 'DATA', 'HORA', 'DURAÇÃO (MIN)', 'NOME', 'TELEMÓVEL', 'RECOLHA', 'CHEGADA', 'KM', 'PREÇO', 'PAX', 'MALAS', 'NOTAS', 'ESTADO', 'ATUALIZADO'];
+const AGENDA_ESTADOS = ['agendada', 'concluida', 'cancelada'];
+
+/** Folha Google com os agendamentos (criada na primeira vez, na Drive do dono do script). */
+function folhaAgenda_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('agendaId');
+  if (id) { try { const ss = SpreadsheetApp.openById(id); return ss.getSheets()[0]; } catch (e) {} }
+  const ss = SpreadsheetApp.create(AGENDA_NOME), sh = ss.getSheets()[0];
+  sh.setName('Agendamentos');
+  sh.getRange(1, 1, sh.getMaxRows(), AGENDA_CAB.length).setNumberFormat('@');   // tudo como texto (datas e horas não mudam)
+  sh.getRange(1, 1, 1, AGENDA_CAB.length).setValues([AGENDA_CAB]).setFontWeight('bold').setBackground('#1c2029').setFontColor('#ffffff');
+  sh.setFrozenRows(1);
+  props.setProperty('agendaId', ss.getId());
+  return sh;
+}
+function codigoNovo_() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789', b = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  let s = ''; for (let i = 0; i < 12; i++) s += c[parseInt(b.substr(i * 2, 2), 16) % c.length];
+  return s;
+}
+function linhasAgenda_(sh) {
+  const n = sh.getLastRow();
+  return n < 2 ? [] : sh.getRange(2, 1, n - 1, AGENDA_CAB.length).getValues();
+}
+const txtA_ = (v, max) => String(v == null ? '' : v).trim().slice(0, max || 200);
+
+/** Cria ou atualiza um agendamento (com TOKEN). Devolve o código do link do cliente. */
+function guardarAgendamento_(p) {
+  const a = p.agendamento || {};
+  const id = txtA_(a.id, 20);
+  if (!/^\d{6,20}$/.test(id)) throw new Error('Agendamento sem ID.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(a.data)) || !/^\d{2}:\d{2}$/.test(String(a.hora))) throw new Error('Data ou hora inválida.');
+  const estado = AGENDA_ESTADOS.indexOf(a.estado) >= 0 ? a.estado : 'agendada';
+  const sh = folhaAgenda_(), linhas = linhasAgenda_(sh);
+  const i = linhas.findIndex(r => String(r[0]) === id);
+  const codigo = i >= 0 && linhas[i][1] ? String(linhas[i][1]) : codigoNovo_();
+  const dur = Math.max(30, Math.ceil((Number(a.segundos) || 0) / 60) + 15);
+  const valores = [[id, codigo, a.data, a.hora, String(dur), txtA_(a.nome, 80), txtA_(a.tel, 30), txtA_(a.origem), txtA_(a.destino),
+    String(Math.round((Number(a.km) || 0) * 10) / 10), String(Math.round((Number(a.preco) || 0) * 100) / 100), txtA_(a.pax, 3), txtA_(a.malas, 3),
+    txtA_(a.notas, 300), estado, Utilities.formatDate(new Date(), 'Europe/Lisbon', 'yyyy-MM-dd HH:mm')]];
+  const linha = i >= 0 ? i + 2 : sh.getLastRow() + 1;
+  sh.getRange(linha, 1, 1, AGENDA_CAB.length).setNumberFormat('@').setValues(valores);
+  return { ok: true, id: id, codigo: codigo, estado: estado };
+}
+function removerAgendamento_(p) {
+  const id = txtA_(p.id, 20), sh = folhaAgenda_(), linhas = linhasAgenda_(sh);
+  const i = linhas.findIndex(r => String(r[0]) === id);
+  if (i >= 0) sh.deleteRow(i + 2);
+  return { ok: true, removido: i >= 0 };
+}
+
+/** Público: o cliente vê só o seu agendamento, pelo código do link. */
+function reservaPublica_(codigo) {
+  codigo = String(codigo || '');
+  if (!/^[A-Za-z0-9]{12}$/.test(codigo)) return { erro: 'Link inválido.' };
+  const r = linhasAgenda_(folhaAgenda_()).find(x => String(x[1]) === codigo);
+  if (!r) return { erro: 'Agendamento não encontrado. Confirme o link ou contacte a GrowuP Driving.' };
+  return { data: String(r[2]), hora: String(r[3]), duracao: Number(r[4]) || 30, nome: String(r[5]).split(' ')[0],
+           origem: String(r[7]), destino: String(r[8]), km: Number(r[9]) || 0, preco: Number(r[10]) || 0,
+           pax: String(r[11]), malas: String(r[12]), estado: String(r[14]) };
+}
+/** Público: horários ocupados (sem nomes, telefones nem moradas). */
+function horariosOcupados_() {
+  const hoje = Utilities.formatDate(new Date(), 'Europe/Lisbon', 'yyyy-MM-dd');
+  const ocupados = linhasAgenda_(folhaAgenda_())
+    .filter(r => String(r[14]) === 'agendada' && String(r[2]) >= hoje)
+    .map(r => ({ data: String(r[2]), hora: String(r[3]), duracao: Number(r[4]) || 30 }))
+    .sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora));
+  return { atualizado: new Date().toISOString(), ocupados: ocupados };
+}
+
 /* ---------- Enviar faturas para "CARROSSEL DE RESULTADOS – LDA → Faturas" ---------- */
 const FAT_PAI = 'CARROSSEL DE RESULTADOS – LDA';
 const FAT_PASTA = 'Faturas';
@@ -605,6 +683,10 @@ function guardarFatura_(p) {
 function data_(v) {
   if (Object.prototype.toString.call(v) === '[object Date]') return Utilities.formatDate(v, 'Europe/Lisbon', 'yyyy-MM-dd');
   return String(v).trim();
+}
+
+function publico_(fn) {
+  try { return json_(fn()); } catch (err) { return json_({ erro: String(err && err.message || err) }); }
 }
 
 function json_(o) {

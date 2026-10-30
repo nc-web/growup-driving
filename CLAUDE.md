@@ -9,3 +9,4 @@
 - Backend: Google Apps Script em `apps-script/`. O `.xlsx` é editado sem conversão (unzip → XML → zip). Depois de mudar o script é preciso publicar uma **versão nova** da implementação `AKfycbwlp7…`.
 - **Segredos:** nunca escrever o código de acesso real (TOKEN) nem chaves de API nos ficheiros do repositório. No cliente vêm de ⚙️ Definições (localStorage); no Apps Script o placeholder é `COLOQUE_AQUI_O_CODIGO`.
 - A importação de faturas do Gmail só considera emails a partir de 2026-10-21.
+- Agendamentos publicados para os clientes ficam na folha Google "GrowuP Transfers · Agendamentos" (criada pelo script; ID em ScriptProperties `agendaId`). Página pública `reserva.html`: `?c=CÓDIGO` mostra o agendamento do cliente; os horários ocupados não mostram dados pessoais. No Apps Script o parâmetro é `cod` (o Google reserva `c`).

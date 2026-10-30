@@ -215,6 +215,7 @@
   main, .dash{position:relative;z-index:3}
   .acoes{flex-wrap:wrap;row-gap:6px}
   .acoes button.cal{color:#ff8a92!important;text-decoration:none!important;font-weight:600}
+  .cal-topo{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin:-4px 0 12px}
   .rodape-marca{max-width:960px;margin:0 auto 32px;padding:0 16px;color:#7d8696;font-size:11px;letter-spacing:.32em;text-align:center;text-transform:uppercase}
   .rodape-marca b{color:#c2c7d0;font-weight:600}
 </style>
@@ -317,6 +318,7 @@
 
     <div class="card">
       <h2>Agendamentos</h2>
+      <div class="cal-topo"><a class="btn btn-ghost btn-sm" href="reserva.html" target="_blank" rel="noopener" style="text-decoration:none">🗓️ Página dos clientes (horários ocupados)</a><button class="btn btn-ghost btn-sm" id="btnSync" title="Publica na página dos clientes os agendamentos futuros que ainda não foram publicados">☁️ Publicar agendamentos</button></div>
       <div class="list" id="lista"><div class="tabela">Ainda sem agendamentos.</div></div>
     </div>
   </section>
@@ -876,6 +878,47 @@ function linkGoogleCal(a){
     ctz: CAL.FUSO, details: calDescricao(a), location: a.origem });
   return "https://calendar.google.com/calendar/render?" + q.toString();
 }
+/* ================== LINK DO CLIENTE E HORÁRIOS OCUPADOS ================== */
+const RESERVA_URL = "https://nc-web.github.io/growup-driving/reserva.html";
+async function enviarAgenda(corpo){
+  if (!scriptUrl() || !scriptToken()) throw new Error("falta o código de acesso em ⚙️ Definições");
+  const r = await fetch(scriptUrl(), { method: "POST", body: JSON.stringify(Object.assign({ token: scriptToken() }, corpo)) });
+  const t = await r.text(); let j;
+  try{ j = JSON.parse(t); }catch(e){ throw new Error("resposta inesperada do servidor"); }
+  if (j.erro) throw new Error(j.erro);
+  return j;
+}
+async function sincronizar(a, avisar){
+  const campos = ["id", "data", "hora", "nome", "tel", "origem", "destino", "km", "segundos", "preco", "pax", "malas", "notas", "estado"];
+  const dados = {}; campos.forEach(k => dados[k] = a[k]); dados.estado = estadoDe(a);
+  try{
+    const r = await enviarAgenda({ acao: "agendamento", agendamento: dados });
+    const x = agendamentos.find(y => y.id === a.id); if (x){ x.codigo = r.codigo; guardar(); }
+    if (avisar) mostrar(`Agendamento publicado. O cliente já o pode ver no link (botão "🔗 Copiar link do cliente") e o horário aparece como ocupado.`, "ok");
+  }catch(e){ if (avisar) mostrar("Guardado neste computador, mas não foi publicado para o cliente: " + e.message, "err"); }
+}
+const linkCliente = a => RESERVA_URL + "?c=" + encodeURIComponent(a.codigo);
+async function copiarLinkCliente(a){
+  try{ await navigator.clipboard.writeText(linkCliente(a)); mostrar("Link copiado: " + linkCliente(a), "ok"); }
+  catch(e){ prompt("Copie o link do cliente:", linkCliente(a)); }
+}
+function enviarLinkCliente(a){
+  let n = String(a.tel || "").replace(/\D/g, "");
+  if (n.length === 9) n = "351" + n;
+  const d = new Date(a.data + "T" + a.hora).toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "long" });
+  const txt = `Olá ${String(a.nome || "").split(" ")[0]}! O seu transfer GrowuP Driving está agendado para ${d} às ${a.hora}.\nPode ver os detalhes e o estado aqui: ${linkCliente(a)}`;
+  window.open(`https://wa.me/${n}?text=${encodeURIComponent(txt)}`, "_blank", "noopener");
+}
+async function sincronizarTodos(){
+  const falta = agendamentos.filter(a => !a.codigo && new Date(a.data + "T" + a.hora) >= new Date(Date.now() - 864e5));
+  if (!falta.length){ mostrar("Todos os agendamentos futuros já estão publicados para os clientes.", "ok"); return; }
+  mostrar(`A publicar ${falta.length} agendamento(s)…`, "ok");
+  for (const a of falta) await sincronizar(a);
+  const ainda = agendamentos.filter(a => falta.some(f => f.id === a.id) && !a.codigo).length;
+  mostrar(ainda ? `${ainda} agendamento(s) não foram publicados. Confirme o código de acesso em ⚙️ Definições.` : "Agendamentos publicados para os clientes.", ainda ? "err" : "ok");
+}
+$("btnSync").onclick = sincronizarTodos;
+
 /* ================== AGENDAMENTOS ================== */
 let agendamentos = store.get("agendamentos", []);
 
@@ -899,6 +942,7 @@ function guardar(){ store.set("agendamentos", agendamentos); renderLista(); rend
 function mudarEstado(id, estado){
   const a = agendamentos.find(x => x.id === id); if (!a) return;
   a.estado = estado; guardar();
+  if (a.codigo) sincronizar(a);
 }
 
 function renderLista(){
@@ -921,12 +965,17 @@ function renderLista(){
     if (est !== "concluida") botao("✓ Concluída", () => mudarEstado(a.id, "concluida"));
     if (est !== "agendada")  botao("Repor agendada", () => mudarEstado(a.id, "agendada"));
     if (est !== "cancelada") botao("Cancelar", () => mudarEstado(a.id, "cancelada"));
+    if (a.codigo){
+      botao("🔗 Copiar link do cliente", () => copiarLinkCliente(a), "cal");
+      if (est !== "cancelada") botao("💬 Enviar link ao cliente", () => enviarLinkCliente(a), "cal");
+    } else botao("☁️ Publicar para o cliente", () => sincronizar(a, true), "cal");
     if (est !== "cancelada"){
       botao("📅 Google Calendar", () => window.open(linkGoogleCal(a), "_blank", "noopener"), "cal");
     }
     botao("Remover", () => {
       if (!confirm("Remover este agendamento?")) return;
       agendamentos = agendamentos.filter(x => x.id !== a.id); guardar();
+      if (a.codigo) enviarAgenda({ acao: "removerAgendamento", id: String(a.id) }).catch(e => mostrar("Removido aqui, mas não na página dos clientes: " + e.message, "err"));
     }, "rm");
     el.appendChild(div);
   });
@@ -1009,7 +1058,8 @@ document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
 $("btnAgendar").onclick = () => {
   const a = recolherDados(); if (!a) return;
   a.estado = "agendada"; agendamentos.push(a); guardar();
-  mostrar("Agendamento registado. Pode enviá-lo agora por WhatsApp.", "ok");
+  mostrar("Agendamento registado. A publicar para o cliente…", "ok");
+  sincronizar(a, true);
 };
 $("btnWhats").onclick = () => {
   const a = recolherDados(); if (!a) return;
