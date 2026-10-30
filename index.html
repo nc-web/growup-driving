@@ -24,7 +24,7 @@
   .wm span{display:block;font-size:14px;font-weight:600;letter-spacing:.55em;margin-top:8px}
   .lema{margin:28px 0 0;color:#d4d8e0;font-size:14px;letter-spacing:.3em;text-transform:uppercase}
   .lema::before{content:"";display:block;width:64px;height:3px;background:var(--red);margin-bottom:16px}
-  main{flex:1;max-width:960px;width:100%;margin:-28px auto 40px;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr;position:relative;z-index:3}
+  main{flex:1;max-width:960px;width:100%;margin:-28px auto 40px;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr;align-content:start;position:relative;z-index:3}
   @media(min-width:760px){main{grid-template-columns:1fr 1fr}}
   a.app{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--red);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:transform .15s,border-color .15s}
   a.app:hover{transform:translateY(-2px);border-color:var(--red)}
