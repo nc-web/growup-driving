@@ -108,6 +108,8 @@
   .seg button{border:0;background:var(--soft);color:var(--ink);padding:12px;font:600 15px system-ui;cursor:pointer}
   .seg button.on[data-tipo="Entrada"]{background:var(--s1);color:#fff}
   .seg button.on[data-tipo="Saída"]{background:var(--s2);color:#fff}
+  .kpis.k4p{grid-template-columns:repeat(2,1fr)}
+  @media(min-width:760px){.kpis.k4p{grid-template-columns:repeat(4,1fr)}}
   .kpis.k3{grid-template-columns:1fr}
   @media(min-width:760px){.kpis.k3{grid-template-columns:repeat(3,1fr)}}
   .socio{display:flex;align-items:center;gap:8px}
@@ -137,7 +139,7 @@
   .vazio{text-align:center;padding:30px 10px;color:var(--muted)}
   .switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
   .switch input{width:auto}
-  .dash > *, main > *, #tvConteudo > *, .kpis > *, .grelha2 > *, #tvPainel > *, #tvRegistar > *, #tvLucros > *, #tvTransfers > *, #tvDivisao .kpis > *, .row > *{min-width:0}
+  .dash > *, main > *, #tvConteudo > *, .kpis > *, .grelha2 > *, #tvPainel > *, #tvRegistar > *, #tvLucros > *, #tvTransfers > *, #tvDivisao .kpis > *, #tvSemanaAtual .kpis > *, .row > *{min-width:0}
   #tvRegistar input, #tvRegistar select{min-width:0;max-width:100%}
   .kpi b{white-space:nowrap;font-size:clamp(20px, 2.2vw, 26px)}
   .kpi small{overflow-wrap:anywhere}
@@ -272,12 +274,31 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
   </div>
 
   <div id="tvConteudo" class="hidden" style="display:grid;gap:16px">
-    <div class="kpis k5">
-      <div class="kpi"><span>Receita</span><b id="tvReceita">–</b><small id="tvReceitaSem"></small></div>
-      <div class="kpi"><span>Despesas</span><b id="tvDespesa">–</b><small id="tvDespesaSem"></small></div>
-      <div class="kpi"><span>Lucro</span><b id="tvLucro">–</b><small id="tvMargem"></small></div>
-      <div class="kpi"><span>Despesa / receita</span><b id="tvRacio">–</b><small>por cada 1 € ganho</small></div>
+    <div class="card" id="tvSemanaAtual">
+      <h2 id="saTitulo">Esta semana</h2>
+      <div class="kpis k3">
+        <div class="kpi"><span>Faturado esta semana</span><b id="saFaturado">–</b><small id="saComparar"></small></div>
+        <div class="kpi"><span>Melhor dia da semana</span><b id="saMelhorDia">–</b><small id="saMelhorValor"></small></div>
+        <div class="kpi"><span>Lucro esta semana</span><b id="saLucro">–</b><small id="saDespesas"></small></div>
+      </div>
+      <div class="grafico" style="height:220px;margin-top:16px"><canvas id="chDias" aria-label="Faturado em cada dia desta semana"></canvas></div>
+    </div>
+
+    <div class="kpis k4p">
+      <div class="kpi"><span>Faturado no período</span><b id="tvReceita">–</b><small id="tvReceitaSem"></small></div>
+      <div class="kpi"><span>Despesas no período</span><b id="tvDespesa">–</b><small id="tvDespesaSem"></small></div>
+      <div class="kpi"><span>Lucro no período</span><b id="tvLucro">–</b><small id="tvMargem"></small></div>
       <div class="kpi"><span>Melhor semana</span><b id="tvMelhor">–</b><small id="tvMelhorData"></small></div>
+    </div>
+
+    <div class="card">
+      <h2>Faturado por semana</h2>
+      <div class="grafico"><canvas id="chReceita" aria-label="Faturado por semana"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Despesa e lucro por semana</h2>
+      <div class="grafico"><canvas id="chDespLucro" aria-label="Despesa e lucro por semana"></canvas></div>
     </div>
 
     <div class="card" id="tvDivisao">
@@ -299,28 +320,6 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
         <tbody id="dvTabSemanas"></tbody>
       </table></div>
       <div class="tabela">Quando há um lucro registado para a semana (aba <b>"Lucros Semanais"</b>), a divisão usa esse valor; senão usa o lucro calculado (receitas − despesas, sem compra de viaturas).</div>
-    </div>
-
-    <div class="card">
-      <h2>Receita vs despesa por semana</h2>
-      <div class="grafico"><canvas id="chSemanas" aria-label="Receita, despesa e lucro por semana"></canvas></div>
-    </div>
-
-    <div class="grelha2">
-      <div class="card">
-        <h2>Receita por semana</h2>
-        <div class="grafico"><canvas id="chReceita" aria-label="Receita por semana"></canvas></div>
-      </div>
-      <div class="card">
-        <h2>Despesas por semana</h2>
-        <div class="grafico"><canvas id="chDespesa" aria-label="Despesas por semana"></canvas></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Despesa / receita por semana</h2>
-      <div class="grafico"><canvas id="chRacio" aria-label="Percentagem da receita gasta em despesas, por semana"></canvas></div>
-      <div class="tabela">Percentagem da receita de cada semana que foi gasta em despesas. Quanto mais baixo, melhor. Semanas sem receita ficam em branco.</div>
     </div>
 
     <div class="grelha2">
@@ -838,11 +837,32 @@ async function renderTvde(){
   $("tvDespesa").textContent = eurK(desp);
   $("tvDespesaSem").textContent = ag.investFora ? `+ ${eur0(ag.investFora)} em compra de viaturas (não incluído)` : `${eur(desp / nSem)} por semana (média)`;
   $("tvLucro").textContent = eurK(lucro); $("tvLucro").className = lucro >= 0 ? "pos" : "neg";
-  $("tvMargem").textContent = rec ? `margem de ${Math.round(lucro / rec * 100)}%` : "";
-  $("tvRacio").textContent = rec ? (desp / rec).toLocaleString("pt-PT", { style: "currency", currency: "EUR" }) : "–";
+  $("tvMargem").textContent = rec ? `margem de ${Math.round(lucro / rec * 100)}% · ${eur(lucro / nSem)} por semana` : "";
   const melhor = ag.semanas.reduce((a, b) => (b.receita > (a ? a.receita : -1) ? b : a), null);
   $("tvMelhor").textContent = melhor && melhor.receita ? eurK(melhor.receita) : "–";
   $("tvMelhorData").textContent = melhor && melhor.receita ? semanaLonga(melhor.k) : "";
+
+  // Semana atual (não depende do período escolhido; respeita a viatura e a opção da compra de viaturas)
+  const hojeS = hojeISO(), iniS = inicioSemana(hojeS), diaMs = 864e5;
+  const isoMais = (iso, n) => dataISO(new Date(new Date(iso + "T12:00").getTime() + n * diaMs));
+  const daSemana = mov.filter(m => (tvViatura === "todas" || m.viatura === tvViatura) && ($("tvInvest").checked || !m.invest));
+  const dias = Array.from({ length: 7 }, (_, i) => { const k = isoMais(iniS, i);
+    const doDia = daSemana.filter(m => m.data === k);
+    return { k, receita: doDia.filter(m => m.tipo === "receita").reduce((s, m) => s + m.valor, 0),
+             despesa: doDia.filter(m => m.tipo === "despesa").reduce((s, m) => s + m.valor, 0), futuro: k > hojeS }; });
+  const fatS = dias.reduce((s, d) => s + d.receita, 0), despS = dias.reduce((s, d) => s + d.despesa, 0);
+  const iniAnt = isoMais(iniS, -7), fimAnt = isoMais(hojeS, -7);
+  const fatAnt = daSemana.filter(m => m.tipo === "receita" && m.data >= iniAnt && m.data <= fimAnt).reduce((s, m) => s + m.valor, 0);
+  const nomeDia = iso => new Date(iso + "T12:00").toLocaleDateString("pt-PT", { weekday: "long" });
+  $("saTitulo").textContent = "Esta semana · " + semanaLonga(iniS);
+  $("saFaturado").textContent = eurK(fatS);
+  $("saComparar").textContent = fatAnt ? `${fatS >= fatAnt ? "▲" : "▼"} ${Math.abs(Math.round((fatS - fatAnt) / fatAnt * 100))}% vs ${eur(fatAnt)} até ${nomeDia(hojeS)} da semana passada`
+    : (fatS ? "semana passada sem faturação até este dia" : "ainda sem faturação esta semana");
+  const melhorDia = dias.reduce((a, d) => d.receita > (a ? a.receita : 0) ? d : a, null);
+  $("saMelhorDia").textContent = melhorDia ? nomeDia(melhorDia.k).replace(/^./, c => c.toUpperCase()) : "–";
+  $("saMelhorValor").textContent = melhorDia ? `${eur(melhorDia.receita)} faturados (${new Date(melhorDia.k + "T12:00").toLocaleDateString("pt-PT", { day: "2-digit", month: "short" })})` : "sem faturação ainda";
+  $("saLucro").textContent = eurK(fatS - despS); $("saLucro").className = fatS - despS >= 0 ? "pos" : "neg";
+  $("saDespesas").textContent = `despesas: ${eur(despS)}`;
 
   // Tabelas
   const linha = (cells, cls) => { const tr = document.createElement("tr");
@@ -867,48 +887,45 @@ async function renderTvde(){
   const tooltipEur = { callbacks: { label: c => ` ${c.dataset.label ? c.dataset.label + ": " : ""}${eur(c.parsed.y ?? c.parsed.x)}` } };
   const eixoEur = { grid: { color: grelha }, border: { display: false }, ticks: { callback: v => eur0(v) } };
 
-  desenharGrafico("chSemanas", { type: "bar",
-    data: { labels: ag.semanas.map(s => semanaLabel(s.k)), datasets: [
-      { type: "bar", label: "Receita", data: ag.semanas.map(s => +s.receita.toFixed(2)), backgroundColor: s1, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 18, order: 2 },
-      { type: "bar", label: "Despesas", data: ag.semanas.map(s => +s.despesa.toFixed(2)), backgroundColor: s2, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 18, order: 2 },
-      { type: "line", label: "Lucro", data: ag.semanas.map(s => +(s.receita - s.despesa).toFixed(2)), borderColor: s3, backgroundColor: s3, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: .25, order: 1 }
-    ]},
-    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
-      plugins: { legend: { position: "top", align: "start", labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: { ...tooltipEur, callbacks: { ...tooltipEur.callbacks, title: it => semanaLonga(ag.semanas[it[0].dataIndex].k) } } },
-      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true } }, y: eixoEur } }
-  });
+  const labels = ag.semanas.map(s => semanaLabel(s.k)), ref = corVar("--ref");
+  const xLimpo = { grid: { display: false }, border: { display: false }, ticks: { maxRotation: 0, autoSkip: true } };
+  const legenda = { position: "top", align: "start", labels: { usePointStyle: true, boxWidth: 8 } };
+  const tituloSemana = it => semanaLonga(ag.semanas[it[0].dataIndex].k) + (ag.semanas[it[0].dataIndex].k === iniS ? " (em curso)" : "");
+  const suave = (cor, a) => { const m = cor.match(/^#([0-9a-f]{6})$/i); if (!m) return cor; const n = parseInt(m[1], 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
 
-  // Receita e despesas por semana, cada uma com a média móvel de 4 semanas
-  const s4 = corVar("--s4"), ref = corVar("--ref");
-  const labels = ag.semanas.map(s => semanaLabel(s.k));
-  const mediaMovel = arr => arr.map((_, i) => { const j = arr.slice(Math.max(0, i - 3), i + 1); return +(j.reduce((a, b) => a + b, 0) / j.length).toFixed(2); });
-  const graficoSemanal = (id, valores, cor, nome) => desenharGrafico(id, { type: "bar",
-    data: { labels, datasets: [
-      { type: "bar", label: nome, data: valores, backgroundColor: cor, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 22, order: 2 },
-      { type: "line", label: "Média de 4 semanas", data: mediaMovel(valores), borderColor: ref, borderWidth: 2, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 4, tension: .3, order: 1 }
-    ]},
-    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
-      plugins: { legend: { position: "top", align: "start", labels: { usePointStyle: true, boxWidth: 8 } },
-        tooltip: { callbacks: { title: it => semanaLonga(ag.semanas[it[0].dataIndex].k), label: c => ` ${c.dataset.label}: ${eur(c.parsed.y)}` } } },
-      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true } }, y: eixoEur } } });
-  graficoSemanal("chReceita", ag.semanas.map(s => +s.receita.toFixed(2)), s1, "Receita");
-  graficoSemanal("chDespesa", ag.semanas.map(s => +s.despesa.toFixed(2)), s2, "Despesas");
+  // 1) Esta semana, dia a dia (melhor dia em destaque; dias que ainda não chegaram ficam vazios)
+  desenharGrafico("chDias", { type: "bar",
+    data: { labels: dias.map((d, i) => ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"][i] + " " + d.k.slice(8)),
+      datasets: [{ label: "Faturado", data: dias.map(d => d.futuro ? null : +d.receita.toFixed(2)),
+        backgroundColor: dias.map(d => melhorDia && d.k === melhorDia.k ? s1 : suave(s1, .45)), borderRadius: 6, maxBarThickness: 46 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+      tooltip: { callbacks: { title: it => { const d = dias[it[0].dataIndex]; return new Date(d.k + "T12:00").toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "short" }); },
+        label: c => ` Faturado: ${eur(c.parsed.y)}` + (dias[c.dataIndex].despesa ? ` · despesas ${eur(dias[c.dataIndex].despesa)}` : "") } } },
+      scales: { x: xLimpo, y: { ...eixoEur, beginAtZero: true } } } });
 
-  // Despesa / receita (%) por semana, com a média do período como referência
-  const racio = ag.semanas.map(s => s.receita > 0 ? +(s.despesa / s.receita * 100).toFixed(1) : null);
-  const racioMedio = rec > 0 ? +(desp / rec * 100).toFixed(1) : null;
-  desenharGrafico("chRacio", { type: "line",
+  // 2) Faturado por semana, com a média do período (a semana em curso fica mais clara)
+  const fat = ag.semanas.map(s => +s.receita.toFixed(2));
+  const media = fat.length ? +(fat.reduce((a, b) => a + b, 0) / fat.length).toFixed(2) : 0;
+  desenharGrafico("chReceita", { type: "bar",
     data: { labels, datasets: [
-      { label: "Despesa / receita", data: racio, borderColor: s4, backgroundColor: s4, borderWidth: 2, pointRadius: 3, pointHoverRadius: 6, spanGaps: false, tension: .25 },
-      { label: `Média do período (${racioMedio === null ? "–" : racioMedio.toLocaleString("pt-PT") + "%"})`, data: labels.map(() => racioMedio), borderColor: ref, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 }
+      { type: "bar", label: "Faturado", data: fat, backgroundColor: ag.semanas.map(s => s.k === iniS ? suave(s1, .45) : s1), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 26, order: 2 },
+      { type: "line", label: `Média: ${eur(media)}`, data: labels.map(() => media), borderColor: ref, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0, order: 1 }
     ]},
     options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
-      plugins: { legend: { position: "top", align: "start", labels: { usePointStyle: true, boxWidth: 8 } },
-        tooltip: { callbacks: { title: it => semanaLonga(ag.semanas[it[0].dataIndex].k),
-          label: c => { if (c.datasetIndex === 1) return ` Média do período: ${c.parsed.y.toLocaleString("pt-PT")}%`;
-            const s = ag.semanas[c.dataIndex]; return ` ${c.parsed.y.toLocaleString("pt-PT")}% (${eur(s.despesa)} de ${eur(s.receita)})`; } } } },
-      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true } },
-        y: { beginAtZero: true, suggestedMax: 30, grid: { color: grelha }, border: { display: false }, ticks: { callback: v => v + "%" } } } } });
+      plugins: { legend: legenda, tooltip: { filter: c => c.datasetIndex === 0, callbacks: { title: tituloSemana, label: c => ` Faturado: ${eur(c.parsed.y)}` } } },
+      scales: { x: xLimpo, y: eixoEur } } });
+
+  // 3) Despesa e lucro por semana (lucro negativo a vermelho)
+  const lucros = ag.semanas.map(s => +(s.receita - s.despesa).toFixed(2));
+  desenharGrafico("chDespLucro", { type: "bar",
+    data: { labels, datasets: [
+      { label: "Despesas", data: ag.semanas.map(s => +s.despesa.toFixed(2)), backgroundColor: s2, borderRadius: 4, maxBarThickness: 18 },
+      { label: "Lucro", data: lucros, backgroundColor: lucros.map(v => v < 0 ? corVar("--err") : s3), borderRadius: 4, maxBarThickness: 18 }
+    ]},
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: legenda, tooltip: { callbacks: { title: tituloSemana, label: c => ` ${c.dataset.label}: ${eur(c.parsed.y)}`,
+        footer: it => { const s = ag.semanas[it[0].dataIndex]; return s.receita ? `Faturado: ${eur(s.receita)} · margem ${Math.round((s.receita - s.despesa) / s.receita * 100)}%` : ""; } } } },
+      scales: { x: xLimpo, y: eixoEur } } });
 
   const horizontal = (id, obj, cor, label) => {
     const pares = Object.entries(obj).sort((a, b) => b[1] - a[1]);
