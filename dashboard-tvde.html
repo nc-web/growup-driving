@@ -365,9 +365,9 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
       </div>
       <div class="row">
         <div class="field">
-          <label for="rgDesc">Descrição</label>
-          <input id="rgDesc" list="rgListaDesc" maxlength="100" placeholder="Ex.: UBER, BOLT, PRIVADO, COMBUSTIVEL" autocomplete="off">
-          <datalist id="rgListaDesc"></datalist>
+          <label for="rgDescSel">Descrição</label>
+          <select id="rgDescSel"></select>
+          <input id="rgDesc" class="hidden" maxlength="100" placeholder="Escreva a descrição" autocomplete="off" style="margin-top:8px">
         </div>
         <div class="field">
           <label for="rgValor">Valor (€)</label>
@@ -1009,10 +1009,41 @@ function rgPrevia(){
     const s = document.createElement("span"); s.textContent = k; const b = document.createElement("b"); b.textContent = val; c.append(s, b); el.appendChild(c); });
 }
 function rgMsg(t, tipo){ const m = $("rgMsg"); m.textContent = t; m.className = "msg " + (tipo || ""); }
+const RG_OUTRA = "__outra__";
+// Lista para escolher: as descrições habituais + as que já existem na folha, das mais usadas para as menos usadas
 function rgListaDescricoes(){
-  const usadas = ((tvDados && tvDados.viaturas && tvDados.viaturas[RG.VIATURA]) || []).map(l => String(l[2] || "").trim()).filter(Boolean);
-  const todas = [...new Set([...RG.ENTRADAS, ...RG.SAIDAS, ...usadas])];
-  $("rgListaDesc").innerHTML = ""; todas.forEach(t => { const o = document.createElement("option"); o.value = t; $("rgListaDesc").appendChild(o); });
+  const linhas = (tvDados && tvDados.viaturas && (Object.entries(tvDados.viaturas).find(([k]) => nomeViatura(k) === RG.VIATURA) || [])[1]) || [];
+  const grupos = { Entrada: new Map(), "Saída": new Map() };
+  const somar = (tipo, desc, n) => { const k = semAcento(desc).trim(); if (!k) return;
+    const g = grupos[tipo], e = g.get(k) || { texto: desc, n: 0, grafias: {} };
+    e.n += n; e.grafias[desc] = (e.grafias[desc] || 0) + n;
+    e.texto = Object.entries(e.grafias).sort((a, b) => b[1] - a[1])[0][0]; g.set(k, e); };
+  RG.ENTRADAS.forEach(d => somar("Entrada", d, 0.5)); RG.SAIDAS.forEach(d => somar("Saída", d, 0.5));
+  linhas.forEach(l => { const desc = String(l[2] || "").trim(), v = numPT(l[3]);
+    if (desc) somar(semAcento(l[1]).startsWith("e") && !(v < 0) ? "Entrada" : "Saída", desc, 1); });
+  const sel = $("rgDescSel"), atual = $("rgDesc").value.trim();
+  sel.innerHTML = "";
+  const opt = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; return o; };
+  sel.appendChild(opt("", "— Escolher —"));
+  [rgTipo, rgTipo === "Entrada" ? "Saída" : "Entrada"].forEach(tipo => {
+    const og = document.createElement("optgroup"); og.label = tipo === "Entrada" ? "↑ Entradas (receita)" : "↓ Saídas (despesa)";
+    [...grupos[tipo].values()].sort((a, b) => b.n - a.n || a.texto.localeCompare(b.texto, "pt"))
+      .forEach(e => { const o = opt(e.texto, e.texto); o.dataset.tipo = tipo; og.appendChild(o); });
+    sel.appendChild(og);
+  });
+  sel.appendChild(opt(RG_OUTRA, "✏️ Outra descrição…"));
+  const existe = [...sel.options].find(o => o.value === atual && o.value);
+  if (existe) sel.value = atual; else if (atual){ sel.value = RG_OUTRA; $("rgDesc").classList.remove("hidden"); } else sel.value = "";
+}
+function rgEscolherDescricao(){
+  const sel = $("rgDescSel"), o = sel.options[sel.selectedIndex], inp = $("rgDesc");
+  if (sel.value === RG_OUTRA){ inp.classList.remove("hidden"); inp.value = ""; inp.focus(); }
+  else {
+    inp.classList.add("hidden"); inp.value = sel.value;
+    if (o && o.dataset.tipo){ rgTipoManual = false; rgDefinirTipo(o.dataset.tipo); }
+    if (sel.value) $("rgValor").focus();
+  }
+  rgPrevia();
 }
 function rgRenderLista(){
   const tb = $("rgLista"); tb.innerHTML = "";
@@ -1045,7 +1076,7 @@ function rgAplicarLocal(r, remover){
 async function rgGravar(){
   if (rgOcupado) return;
   const desc = $("rgDesc").value.trim(), v = rgValor(), data = $("rgData").value;
-  if (!desc) return rgMsg("Escreva a descrição.", "err");
+  if (!desc) return rgMsg("Escolha a descrição (ou escreva uma em \"Outra descrição\").", "err");
   if (!isFinite(v) || v === 0) return rgMsg("Indique um valor diferente de zero.", "err");
   if (!data) return rgMsg("Escolha a data.", "err");
   if (!scriptUrl() || !scriptToken()) return rgMsg("Falta o URL do script e o código de acesso em ⚙️ Definições.", "err");
@@ -1055,7 +1086,8 @@ async function rgGravar(){
     rgRegistos.push(r); if (rgRegistos.length > 30) rgRegistos = rgRegistos.slice(-30); store.set("rg_registos", rgRegistos);
     rgRenderLista(); rgAplicarLocal(r);
     rgMsg(`Gravado na linha ${r.linha}: ${r.tipo} · ${r.descricao} · ${eur(r.valor)} · semana ${r.semana}.`, "ok");
-    $("rgDesc").value = ""; $("rgValor").value = ""; rgTipoManual = false; rgDefinirTipo("Entrada"); $("rgDesc").focus();
+    $("rgDesc").value = ""; $("rgDesc").classList.add("hidden"); $("rgValor").value = ""; rgTipoManual = false; rgDefinirTipo("Entrada");
+    rgListaDescricoes(); $("rgDescSel").focus();
   }catch(e){ rgMsg("Não foi gravado: " + (e.message || e), "err"); }
   finally{ rgOcupado = false; b.disabled = false; b.textContent = "Gravar na folha"; }
 }
@@ -1082,7 +1114,8 @@ function rgMostrar(sub){
   }
 }
 document.querySelectorAll("#tvSubtabs .subtab").forEach(b => b.onclick = () => rgMostrar(b.dataset.sub));
-document.querySelectorAll("#rgTipo button").forEach(b => b.onclick = () => rgDefinirTipo(b.dataset.tipo, true));
+document.querySelectorAll("#rgTipo button").forEach(b => b.onclick = () => { rgDefinirTipo(b.dataset.tipo, true); rgListaDescricoes(); });
+$("rgDescSel").addEventListener("change", rgEscolherDescricao);
 $("rgDesc").addEventListener("input", () => {
   const d = semAcento($("rgDesc").value.trim());
   if (!rgTipoManual && d){
