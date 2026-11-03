@@ -6,12 +6,12 @@
 <meta name="theme-color" content="#1a1d25">
 <title>Reservas GrowuP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Russo+One&display=swap" rel="stylesheet">
 <style>
   :root{--red:#e31b2b;--bg:#15181f;--card:#1c2029;--ink:#f3f4f6;--muted:#a3aab8;--line:#2c323e;
         --stripes:repeating-linear-gradient(135deg,rgba(255,255,255,.028) 0 2px,transparent 2px 14px);color-scheme:dark}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg) var(--stripes);color:var(--ink);font:16px/1.5 "Montserrat",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+  body{margin:0;background:var(--bg) var(--stripes);color:var(--ink);font:16px/1.5 "Chakra Petch",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
   header{position:relative;overflow:hidden;background:#1a1d25 var(--stripes);border-bottom:3px solid var(--red);padding:48px 16px 56px}
   .facetas{position:absolute;right:0;top:0;height:100%;width:min(38vw,440px)}
   .facetas svg{width:100%;height:100%;display:block}
@@ -63,6 +63,9 @@
   .contactos a{display:inline-flex;align-items:center;gap:8px;background:var(--red);color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:10px 16px;font-size:14px}
   .contactos a.sec{background:transparent;border:1px solid #3a4250}
   @media(max-width:560px){ .dia{grid-template-columns:1fr} .linhas div{grid-template-columns:1fr;gap:2px} }
+
+  /* Letras da marca: Russo One nos títulos e números de destaque, Chakra Petch no resto */
+  h1, h2, h3, .wm b, .marca .wm b, .kpi b, .quando, .total, .price .total, .lema, .titulo h1, .rodape-marca, footer{font-family:"Russo One","Chakra Petch",system-ui,sans-serif!important;font-weight:400!important}
 </style>
 </head>
 <body>

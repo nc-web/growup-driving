@@ -22,7 +22,7 @@ Registo dos pedidos do Nuno e das decisões tomadas, por ordem. Serve de context
 - Por pedido: só importa a partir de **2026-10-21**. 69 faturas antigas importadas por engano continuam nas pastas de março a julho à espera de decisão.
 
 ## 4. Design e calendário
-- Design igual ao cartão de visita (escuro, riscas, vermelho #e31b2b, Montserrat, facetas, logótipo, lema).
+- Design igual ao cartão de visita (escuro, riscas, vermelho #e31b2b, Russo One + Chakra Petch, facetas, logótipo, lema).
 - Envio de agendamentos para o **Google Calendar** (botão por agendamento). A exportação para iPhone (.ics) foi feita e depois **removida** a pedido (o iPhone recebe através da conta Google).
 - Ideia em aberto: envio automático para o Google Calendar pelo Apps Script (não pedido ainda).
 

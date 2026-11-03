@@ -12,7 +12,7 @@ Histórico completo de pedidos e decisões: [`docs/historico.md`](docs/historico
 - Ações irreversíveis (apagar ficheiros/faturas no Drive, apagar linhas reais da folha) só com autorização explícita do Nuno.
 
 ## Design da marca (cartão de visita GrowuP Driving)
-Fundo escuro `#15181f`/`#1c2029` com riscas diagonais, vermelho `#e31b2b`, letra **Montserrat**, facetas vermelhas no topo (SVG), logótipo (círculo vermelho + estrada + seta) desenhado em SVG, lema "Profissionalismo · Conforto · Qualidade". Bloco CSS "Identidade GrowuP Driving" em cada página. Sempre escuro (sem modo claro). Paleta dos gráficos: receita vermelho, despesas cinza `#9aa4b6`, lucro verde `#22c55e`, rácio laranja `#f5a524`.
+Fundo escuro `#15181f`/`#1c2029` com riscas diagonais, vermelho `#e31b2b`, letras **Russo One** (títulos, wordmark e números de destaque) e **Chakra Petch** (texto, botões e campos), facetas vermelhas no topo (SVG), logótipo (círculo vermelho + estrada + seta) desenhado em SVG, lema "Profissionalismo · Conforto · Qualidade". Bloco CSS "Identidade GrowuP Driving" em cada página. Sempre escuro (sem modo claro). Paleta dos gráficos: receita vermelho, despesas cinza `#9aa4b6`, lucro verde `#22c55e`, rácio laranja `#f5a524`.
 
 ## Ficheiros
 | Ficheiro | O que é |
