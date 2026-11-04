@@ -47,7 +47,7 @@ Site: https://nc-web.github.io/growup-driving/ · gestão: `/gestao.html` · rep
 ## Backend — `apps-script/GrowUP-Dashboard-AppsScript.gs`
 - Projeto "GrowUP Dashboard TVDE" (editor: `script.google.com/home/projects/18HxAyRbGTMAsSZ190uislAnco-WVZJA31UU5_r1eefgtFK8duxBArTbe/edit`), conta nc@growup.gg, serviço avançado Drive API v3.
 - Implementação principal `AKfycbwlp7IcYvAkYdq5byDzlI_24mG9kBBYt9aphJ9WP0dUsQvS_Caz2Y2o5_V_39FTJi3e` (Executar como: Eu · Qualquer pessoa). Implementação de login `AKfycbyor9…` (Executar como: utilizador).
-- **Guardar o código não chega**: publicar em *Implementar → Gerir implementações → ✏️ → Versão nova → Implementar* (ver `/publicar-script`). Última versão publicada: 11.
+- **Guardar o código não chega**: publicar em *Implementar → Gerir implementações → ✏️ → Versão nova → Implementar* (ver `/publicar-script`). Última versão publicada: 12 (inclui o acionador de hora a hora `ordenarTesla`).
 - `doGet`: `modo=login` · `modo=recolher&sessao=` · `modo=reserva&cod=` (público; o Google **reserva o parâmetro `c`**) · `modo=ocupados` (público) · sem modo + `token` → dados da folha.
 - `doPost` (JSON em texto, com `token`, LockService, limpa a cache): `adicionar`, `anular`, `upload`, `lucro`, `anularLucro`, `agendamento`, `removerAgendamento`, `listarAgendamentos`.
 - O .xlsx é editado **sem conversão**: unzip → XML (inlineStr, fórmulas explícitas) → `fullCalcOnLoad` → zip com `[Content_Types].xml` primeiro → `Drive.Files.update`. Leitura: cópia temporária convertida para Google Sheets, apagada no fim.
