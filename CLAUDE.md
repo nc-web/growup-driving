@@ -42,6 +42,7 @@ Site: https://nc-web.github.io/growup-driving/ · gestão: `/gestao.html` · rep
 - **Registar lucro** → aba **"Lucros Semanais"** (criada pelo script dentro do .xlsx): A SEMANA, B INÍCIO, C FIM, D VALOR GANHO, E NUNO CARDOSO (50%) `=Dn*0.5`, F BRUNO PINTO (50%) `=Dn*0.5`, G REGISTADO EM, H OBSERVAÇÕES. Uma linha por semana (segunda-feira); se já existir, pergunta antes de substituir.
 - **📎 Enviar fatura** → Drive "CARROSSEL DE RESULTADOS – LDA → Faturas → `yyyy-MM Mês`" (PDF/imagens ≤ 20 MB, sem duplicar).
 - **Objetivo semanal** (`TVDE.OBJETIVO_SEMANAL`, 700 €) no topo do Painel, dentro de "Esta semana": mostra o que falta faturar, barra de progresso e quanto é preciso por dia até domingo.
+- **Aba "Resumo"** do .xlsx (corrigida a 2026-11-04 por `corrigirResumo`, com cópia de segurança): conta **só o Tesla 3 desde 11/05/2026** (a compra de 35 000 € entra nas saídas). Ano em B5; F5 entradas, J5 saídas (positivas), N5 total, R5 BP e V5 OFFLINE (líquido por QUEM), Z5 PRIVADOS (entradas com DESCRIÇÃO a conter "privad"); tabela por mês C9:G20 (entradas, saídas, saldo = entradas − saídas), G21 total. Fórmulas SUMIFS geradas em `formulasResumo_`. Entradas negativas contam como saídas (igual ao dashboard).
 - **🚗 Transfers**: valores ganhos, viagens, km, clientes que repetem (por telemóvel). Lê a folha de agendamentos (`listarAgendamentos`) e junta os de `localStorage.agendamentos` ainda não publicados (a folha prevalece).
 
 ## Backend — `apps-script/GrowUP-Dashboard-AppsScript.gs`

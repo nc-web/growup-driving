@@ -403,7 +403,7 @@ function testarOrdenacao() {
 }
 /** Faz uma cópia de segurança do ficheiro na mesma pasta (antes da primeira ordenação). */
 function copiaSeguranca_() {
-  const f = DriveApp.getFileById(FILE_ID), nome = f.getName().replace(/\.xlsx$/i, '') + ' (cópia antes de ordenar ' + Utilities.formatDate(new Date(), 'Europe/Lisbon', 'yyyy-MM-dd HHmm') + ').xlsx';
+  const f = DriveApp.getFileById(FILE_ID), nome = f.getName().replace(/\.xlsx$/i, '') + ' (cópia de segurança ' + Utilities.formatDate(new Date(), 'Europe/Lisbon', 'yyyy-MM-dd HHmm') + ').xlsx';
   const pai = f.getParents().hasNext() ? f.getParents().next() : DriveApp.getRootFolder();
   return f.makeCopy(nome, pai).getUrl();
 }
@@ -714,6 +714,63 @@ function horariosOcupados_() {
     .map(r => ({ data: String(r[2]), hora: String(r[3]), duracao: Number(r[4]) || 30 }))
     .sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora));
   return { atualizado: new Date().toISOString(), ocupados: ocupados };
+}
+
+/* ---------- Corrigir a aba "Resumo" (só Tesla 3, desde 11/05/2026; compra incluída) ---------- */
+const RESUMO_INICIO = 'DATE(2026,5,11)';
+function formulasResumo_() {
+  const T = "'Entradas e Saídas - Tesla 3'!";
+  const F = T + '$F:$F', D = T + '$D:$D', C = T + '$C:$C', E = T + '$E:$E', I = T + '$I:$I';
+  const ini = C + ',">="&' + RESUMO_INICIO;
+  const ano = ',' + C + ',">="&DATE($B$5,1,1),' + C + ',"<"&DATE($B$5+1,1,1)';
+  const mes = r => ',' + C + ',">="&DATE($B$5,$B' + r + ',1),' + C + ',"<"&EDATE(DATE($B$5,$B' + r + ',1),1)';
+  const s = (crit, per) => 'SUMIFS(' + F + ',' + ini + per + crit + ')';
+  const ent = (per, x) => s(',' + D + ',"Entrada",' + F + ',">0"' + (x || ''), per);
+  const sai = (per, x) => '(' + s(',' + D + ',"Saída",' + F + ',">0"' + (x || ''), per) + '-' + s(',' + D + ',"Saída",' + F + ',"<0"' + (x || ''), per) + '-' + s(',' + D + ',"Entrada",' + F + ',"<0"' + (x || ''), per) + ')';
+  const quem = q => ',' + I + ',"' + q + '"';
+  const f = {};
+  f.F5 = ent(ano); f.J5 = sai(ano); f.N5 = 'F5-J5';
+  f.R5 = ent(ano, quem('bp')) + '-' + sai(ano, quem('bp'));
+  f.V5 = ent(ano, quem('Off')) + '-' + sai(ano, quem('Off'));
+  f.Z5 = ent(ano, ',' + E + ',"*privad*"');
+  for (let r = 9; r <= 20; r++) { f['C' + r] = ent(mes(r)); f['E' + r] = sai(mes(r)); f['G' + r] = 'C' + r + '-E' + r; }
+  f.G21 = 'SUM(G9:G20)';
+  return f;
+}
+function aplicarResumo_(fileId) {
+  const x = abrirXlsx_(fileId, 'Resumo');
+  if (!x.caminho) throw new Error('Não encontrei a aba Resumo.');
+  let xml = x.by[x.caminho].getDataAsString('UTF-8');
+  const f = formulasResumo_();
+  Object.keys(f).forEach(ref => {
+    const re = new RegExp('<c r="' + ref + '"([^>]*?)(\\/>|>[\\s\\S]*?<\\/c>)');
+    const m = xml.match(re);
+    if (!m) throw new Error('Célula ' + ref + ' não existe no Resumo.');
+    const nova = '<c r="' + ref + '"' + m[1].replace(/\st="\w+"/, '') + '><f>' + escXml_(f[ref]) + '</f></c>';
+    xml = xml.split(m[0]).join(nova);
+  });
+  gravarXlsx_(x, xml);
+}
+function lerResumo_(fileId) {
+  const tmp = Drive.Files.copy({ name: '_tmp_resumo', mimeType: MimeType.GOOGLE_SHEETS }, fileId, { supportsAllDrives: true });
+  try {
+    const sh = SpreadsheetApp.openById(tmp.id).getSheetByName('Resumo');
+    SpreadsheetApp.flush();
+    return { topo: sh.getRange('B4:Z5').getDisplayValues().map(r => r.filter(String)), meses: sh.getRange('B8:G21').getDisplayValues().map(r => r.filter(String)) };
+  } finally { Drive.Files.remove(tmp.id, { supportsAllDrives: true }); }
+}
+function testarResumo() {
+  const copia = Drive.Files.copy({ name: '_teste_resumo_GrowuP Driving.xlsx' }, FILE_ID, { supportsAllDrives: true });
+  try { aplicarResumo_(copia.id); const r = lerResumo_(copia.id); Logger.log(JSON.stringify(r)); return r; }
+  finally { DriveApp.getFileById(copia.id).setTrashed(true); }
+}
+function corrigirResumo() {
+  const r = testarResumo();
+  if (JSON.stringify(r).indexOf('#') >= 0) throw new Error('O teste deu erro numa fórmula; não mexi no ficheiro.');
+  Logger.log('Cópia de segurança: ' + copiaSeguranca_());
+  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try { aplicarResumo_(FILE_ID); CacheService.getScriptCache().remove('dados'); } finally { lock.releaseLock(); }
+  Logger.log('Resumo corrigido: ' + JSON.stringify(lerResumo_(FILE_ID)));
 }
 
 /* ---------- Enviar faturas para "CARROSSEL DE RESULTADOS – LDA → Faturas" ---------- */
