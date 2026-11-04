@@ -108,6 +108,15 @@
   .seg button{border:0;background:var(--soft);color:var(--ink);padding:12px;font:600 15px system-ui;cursor:pointer}
   .seg button.on[data-tipo="Entrada"]{background:var(--s1);color:#fff}
   .seg button.on[data-tipo="Saída"]{background:var(--s2);color:#fff}
+  .objetivo{background:linear-gradient(135deg,#232833,#1a1d25);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+  .obj-topo{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .obj-topo span{color:var(--muted);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+  .obj-topo b{font:700 clamp(24px,3vw,32px) "Chakra Petch",system-ui,sans-serif;color:#fff;white-space:nowrap}
+  .obj-topo b.ok{color:var(--ok)}
+  .obj-barra{height:12px;background:#2a303b;border-radius:999px;overflow:hidden;margin:12px 0 8px}
+  .obj-barra i{display:block;height:100%;width:0;background:var(--red);border-radius:999px;transition:width .5s}
+  .obj-barra i.ok{background:var(--ok)}
+  .obj-info{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
   .kpis.k4p{grid-template-columns:repeat(2,1fr)}
   @media(min-width:760px){.kpis.k4p{grid-template-columns:repeat(4,1fr)}}
   .kpis.k3{grid-template-columns:1fr}
@@ -280,6 +289,11 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
   <div id="tvConteudo" class="hidden" style="display:grid;gap:16px">
     <div class="card" id="tvSemanaAtual">
       <h2 id="saTitulo">Esta semana</h2>
+      <div class="objetivo" id="objetivo">
+        <div class="obj-topo"><span id="objRotulo">Objetivo semanal</span><b id="objFalta">–</b></div>
+        <div class="obj-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="objBarra"><i id="objEnchimento"></i></div>
+        <div class="obj-info"><span id="objFeito"></span><span id="objRitmo"></span></div>
+      </div>
       <div class="kpis k3">
         <div class="kpi"><span>Faturado esta semana</span><b id="saFaturado">–</b><small id="saComparar"></small></div>
         <div class="kpi"><span>Melhor dia da semana</span><b id="saMelhorDia">–</b><small id="saMelhorValor"></small></div>
@@ -563,6 +577,7 @@ function durFmt(s){ const m = Math.round(s/60); return m < 60 ? m + " min" : Mat
 /* ================== DASHBOARD TVDE ================== */
 const TVDE = {
   LIMITE_INVEST: 5000,   // despesas a partir deste valor contam como compra de viatura
+  OBJETIVO_SEMANAL: 700, // objetivo de faturação por semana (€)
   // Ligação à folha (Apps Script "GrowUP Dashboard TVDE"); pode ser alterada em ⚙️ Definições
   SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwlp7IcYvAkYdq5byDzlI_24mG9kBBYt9aphJ9WP0dUsQvS_Caz2Y2o5_V_39FTJi3e/exec",
   TOKEN: "",   // o código de acesso é introduzido em ⚙️ Definições (fica só neste browser)
@@ -867,6 +882,17 @@ async function renderTvde(){
   $("saMelhorValor").textContent = melhorDia ? `${eur(melhorDia.receita)} faturados (${new Date(melhorDia.k + "T12:00").toLocaleDateString("pt-PT", { day: "2-digit", month: "short" })})` : "sem faturação ainda";
   $("saLucro").textContent = eurK(fatS - despS); $("saLucro").className = fatS - despS >= 0 ? "pos" : "neg";
   $("saDespesas").textContent = `despesas: ${eur(despS)}`;
+
+  // Objetivo semanal: mostra o que falta faturar para chegar ao objetivo
+  const obj = TVDE.OBJETIVO_SEMANAL, falta = Math.max(0, obj - fatS), pct = Math.min(100, Math.round(fatS / obj * 100));
+  const diasRest = dias.filter(d => d.k >= hojeS).length;   // inclui hoje
+  $("objRotulo").textContent = `Objetivo semanal · ${eur0(obj)}`;
+  $("objFalta").textContent = falta > 0 ? `Faltam ${eur(falta)}` : `Objetivo atingido! +${eur(fatS - obj)}`;
+  $("objFalta").className = falta > 0 ? "" : "ok";
+  $("objEnchimento").style.width = pct + "%"; $("objEnchimento").className = falta > 0 ? "" : "ok";
+  $("objBarra").setAttribute("aria-valuenow", pct);
+  $("objFeito").textContent = `${eur(fatS)} faturados (${pct}%)`;
+  $("objRitmo").textContent = falta > 0 ? (diasRest > 0 ? `${diasRest} dia${diasRest > 1 ? "s" : ""} até domingo · ${eur(falta / diasRest)} por dia` : "") : "🎉 parabéns";
 
   // Tabelas
   const linha = (cells, cls) => { const tr = document.createElement("tr");

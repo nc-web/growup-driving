@@ -41,6 +41,7 @@ Site: https://nc-web.github.io/growup-driving/ · gestão: `/gestao.html` · rep
 - **Registar movimento** → aba "Entradas e Saídas - Tesla 3": cabeçalho na linha 3, dados desde a 4. Colunas B SEMANA, C DATA (serial, estilo 121), D TIPO, E DESCRIÇÃO (64), F VALOR (65; saídas com "-"), G MÊS `=MONTH(Cn)` (104), H ANO `=YEAR(Cn)` (125), I QUEM. Escreve na primeira linha livre; Table_1 é alargada se preciso. Semana 1 = semana de **2026-05-11**. Anular só se a linha não mudou.
 - **Registar lucro** → aba **"Lucros Semanais"** (criada pelo script dentro do .xlsx): A SEMANA, B INÍCIO, C FIM, D VALOR GANHO, E NUNO CARDOSO (50%) `=Dn*0.5`, F BRUNO PINTO (50%) `=Dn*0.5`, G REGISTADO EM, H OBSERVAÇÕES. Uma linha por semana (segunda-feira); se já existir, pergunta antes de substituir.
 - **📎 Enviar fatura** → Drive "CARROSSEL DE RESULTADOS – LDA → Faturas → `yyyy-MM Mês`" (PDF/imagens ≤ 20 MB, sem duplicar).
+- **Objetivo semanal** (`TVDE.OBJETIVO_SEMANAL`, 700 €) no topo do Painel, dentro de "Esta semana": mostra o que falta faturar, barra de progresso e quanto é preciso por dia até domingo.
 - **🚗 Transfers**: valores ganhos, viagens, km, clientes que repetem (por telemóvel). Lê a folha de agendamentos (`listarAgendamentos`) e junta os de `localStorage.agendamentos` ainda não publicados (a folha prevalece).
 
 ## Backend — `apps-script/GrowUP-Dashboard-AppsScript.gs`
