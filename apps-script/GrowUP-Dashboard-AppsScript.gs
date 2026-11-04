@@ -279,10 +279,7 @@ function adicionarMovimento_(fileId, p) {
   const modelo = n - 1;
   if (modelo < 4) throw new Error('A aba não tem dados para usar como modelo.');
   const mx = linhas[modelo];
-  // SEMANA: semana 1 = semana (segunda a domingo) da primeira data da tabela
-  const s0 = Number(valorCelula_(linhas[4], 'C', 4)), sd = serialData_(mov.data);
-  const seg0 = s0 - ((s0 + 5) % 7);               // serial 2 = segunda-feira (01/01/1900)
-  const semana = Math.floor((sd - seg0) / 7) + 1;
+  const sd = serialData_(mov.data), semana = semanaDe_(mov.data);
   const rowTag = mx.match(/<row [^>]*>/)[0].replace(/\sr="\d+"/, ' r="' + n + '"').replace(/\/>$/, '>');
   const st = c => estiloCelula_(mx, c, modelo);
   const txt = (c, v) => '<c r="' + c + n + '"' + st(c) + ' t="inlineStr"><is><t>' + escXml_(v) + '</t></is></c>';
@@ -300,8 +297,122 @@ function adicionarMovimento_(fileId, p) {
     xml = seguinte ? xml.replace(linhas[seguinte], nova + linhas[seguinte]) : xml.replace('</sheetData>', nova + '</sheetData>');
   }
   alargarTabela_(x, n);
-  gravarXlsx_(x, xml);
-  return { ok: true, linha: n, semana: semana, data: mov.data, tipo: mov.tipo, descricao: mov.descricao, valor: mov.valor, mes: mov.mes, ano: mov.ano, quem: mov.quem };
+  const o = ordenarXml_(xml);                    // a tabela fica sempre ordenada por data (mais recente primeiro)
+  gravarXlsx_(x, o.xml);
+  return { ok: true, linha: o.mapa[n] || n, semana: semana, data: mov.data, tipo: mov.tipo, descricao: mov.descricao, valor: mov.valor, mes: mov.mes, ano: mov.ano, quem: mov.quem };
+}
+
+/** SEMANA: semana 1 = semana de SEMANA1 (segunda a domingo). */
+function semanaDe_(iso) {
+  return Math.floor((serialData_(segundaFeira_(iso)) - serialData_(segundaFeira_(SEMANA1))) / 7) + 1;
+}
+
+/** Desfaz um registo: procura a linha com exatamente o que foi gravado (a tabela pode ter sido reordenada). */
+function anularMovimento_(fileId, p) {
+  const x = abrirXlsx_(fileId);
+  if (x.nativo) return anularNativo_(x.file, p);
+  let xml = x.by[x.caminho].getDataAsString('UTF-8');
+  const linhas = mapaLinhas_(xml), alvo = serialData_(String(p.data));
+  const igual = n => { const r = linhas[n]; return r && Number(valorCelula_(r, 'C', n)) === alvo &&
+    Math.abs(Number(valorCelula_(r, 'F', n)) - Number(p.valor)) < 0.005 &&
+    String(valorCelula_(r, 'E', n)).trim() === String(p.descricao).trim(); };
+  const pedida = parseInt(p.linha, 10);
+  const n = igual(pedida) ? pedida : Object.keys(linhas).map(Number).filter(k => k > 3).sort((a, b) => a - b).find(igual);
+  if (!n) throw new Error('Não encontrei esse registo na folha (pode já ter sido alterado ou apagado). Corrija diretamente no ficheiro.');
+  const r = linhas[n], rowTag = r.match(/<row [^>]*>/)[0].replace(/\/>$/, '>');
+  xml = xml.replace(r, rowTag + '<c r="C' + n + '"' + estiloCelula_(r, 'C', n) + '/><c r="F' + n + '"' + estiloCelula_(r, 'F', n) + '/></row>');
+  gravarXlsx_(x, ordenarXml_(xml).xml);
+  return { ok: true, linha: n };
+}
+
+/* ---------- Ordenar a aba "Entradas e Saídas - Tesla 3" por DATA (mais recente primeiro) ---------- */
+/** Reordena as linhas de dados (da 4 até à última com DATA) sem converter o ficheiro.
+ *  Mantém estilos; MÊS/ANO ficam com fórmulas explícitas da nova linha; linhas vazias vão para o fim. */
+function ordenarXml_(xml) {
+  const linhas = mapaLinhas_(xml);
+  const nums = Object.keys(linhas).map(Number).filter(n => n >= 4).sort((a, b) => a - b);
+  const temData = n => { const v = valorCelula_(linhas[n], 'C', n); return v !== null && v !== '' && isFinite(Number(v)); };
+  const dados = nums.filter(temData).map(n => ({ n: n, d: Number(valorCelula_(linhas[n], 'C', n)) }));
+  if (!dados.length) return { xml: xml, mudou: false, mapa: {} };
+  const ultimo = dados[dados.length - 1].n, regiao = nums.filter(n => n <= ultimo);
+  const comData = new Set(dados.map(d => d.n));
+  const ordem = dados.slice().sort((a, b) => b.d - a.d || b.n - a.n).map(d => d.n)
+    .concat(regiao.filter(n => !comData.has(n)));
+  const mapa = {}; ordem.forEach((velho, i) => mapa[velho] = 4 + i);
+  const jaOrdenado = ordem.every((velho, i) => velho === 4 + i);
+  const temPartilhadas = /<f [^>]*t="shared"/.test(xml);
+  if (jaOrdenado && !temPartilhadas) return { xml: xml, mudou: false, mapa: mapa };
+  const novas = ordem.map(velho => renumerarLinha_(linhas[velho], velho, mapa[velho])).join('');
+  // tira as linhas antigas da zona e põe as novas no lugar da primeira
+  const primeira = linhas[regiao[0]];
+  let out = xml.replace(primeira, '\u0000ORDENAR\u0000');
+  regiao.slice(1).forEach(n => { out = out.replace(linhas[n], ''); });
+  out = out.replace('\u0000ORDENAR\u0000', novas);
+  // fórmulas partilhadas noutras linhas deixariam de fazer sentido: passam a valores (MÊS/ANO a fórmulas explícitas)
+  out = out.replace(/<row [^>]*>[\s\S]*?<\/row>/g, r => {
+    if (r.indexOf('t="shared"') < 0) return r;
+    const n = +atributo_(r.match(/<row [^>]*>/)[0], 'r');
+    return n >= 4 ? renumerarLinha_(r, n, n) : r;
+  });
+  return { xml: out, mudou: true, mapa: mapa };
+}
+function renumerarLinha_(r, velho, novo) {
+  r = r.replace(/^<row ([^>]*?)\sr="\d+"/, '<row $1 r="' + novo + '"').replace(/^<row r="\d+"/, '<row r="' + novo + '"');
+  return r.replace(/<c r="([A-Z]+)\d+"([^>]*?)(\/>|>([\s\S]*?)<\/c>)/g, (m, col, attrs, fim, corpo) => {
+    const ref = '<c r="' + col + novo + '"' + attrs;
+    if (fim === '/>') return ref + '/>';
+    if (corpo.indexOf('<f') >= 0) {
+      if (col === 'G' || col === 'H') corpo = corpo.replace(/<f[^>]*\/>|<f[^>]*>[\s\S]*?<\/f>/, '<f>' + (col === 'G' ? 'MONTH' : 'YEAR') + '(C' + novo + ')</f>');
+      else if (/<f[^>]*t="shared"/.test(corpo)) corpo = corpo.replace(/<f[^>]*\/>|<f[^>]*>[\s\S]*?<\/f>/, '');
+      else corpo = corpo.replace(/(<f[^>]*>)([\s\S]*?)(<\/f>)/, (mm, a, txt, z) => a + txt.replace(new RegExp('(\\$?[A-Z]{1,3}\\$?)' + velho + '(?!\\d)', 'g'), '$1' + novo) + z);
+    }
+    return ref + '>' + corpo + '</c>';
+  });
+}
+/** Ordena já (para alterações feitas à mão no ficheiro). Corre de hora a hora depois de "instalarOrdenacao". */
+function ordenarTesla() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) return;
+  try {
+    const x = abrirXlsx_(FILE_ID);
+    if (x.nativo) { ordenarNativo_(abaNativa_(x.file)); return; }
+    const o = ordenarXml_(x.by[x.caminho].getDataAsString('UTF-8'));
+    if (o.mudou) { gravarXlsx_(x, o.xml); CacheService.getScriptCache().remove('dados'); }
+    Logger.log(o.mudou ? 'Tabela ordenada por data (mais recente primeiro).' : 'A tabela já estava ordenada.');
+  } finally { lock.releaseLock(); }
+}
+function instalarOrdenacao() {
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'ordenarTesla').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('ordenarTesla').timeBased().everyHours(1).create();
+  Logger.log('Ordenação automática ligada (de hora a hora).');
+}
+/** Teste numa CÓPIA: ordena, confirma que nada se perdeu e manda a cópia para o lixo. */
+function testarOrdenacao() {
+  const antes = lerFolha_(FILE_ID).viaturas['Tesla 3'];
+  const copia = Drive.Files.copy({ name: '_teste_ordenar_GrowuP Driving.xlsx' }, FILE_ID, { supportsAllDrives: true });
+  try {
+    const x = abrirXlsx_(copia.id), o = ordenarXml_(x.by[x.caminho].getDataAsString('UTF-8'));
+    gravarXlsx_(x, o.xml);
+    const depois = lerFolha_(copia.id).viaturas['Tesla 3'];
+    const soma = l => Math.round(l.reduce((s, r) => s + (Number(r[3]) || 0), 0) * 100) / 100;
+    const ordenado = depois.every((r, i) => i === 0 || r[0] <= depois[i - 1][0]);
+    Logger.log(JSON.stringify({ linhasAntes: antes.length, linhasDepois: depois.length, somaAntes: soma(antes), somaDepois: soma(depois),
+      ordenado: ordenado, primeiras: depois.slice(0, 3), ultimas: depois.slice(-2) }));
+    return antes.length === depois.length && soma(antes) === soma(depois) && ordenado;
+  } finally { DriveApp.getFileById(copia.id).setTrashed(true); }
+}
+/** Faz uma cópia de segurança do ficheiro na mesma pasta (antes da primeira ordenação). */
+function copiaSeguranca_() {
+  const f = DriveApp.getFileById(FILE_ID), nome = f.getName().replace(/\.xlsx$/i, '') + ' (cópia antes de ordenar ' + Utilities.formatDate(new Date(), 'Europe/Lisbon', 'yyyy-MM-dd HHmm') + ').xlsx';
+  const pai = f.getParents().hasNext() ? f.getParents().next() : DriveApp.getRootFolder();
+  return f.makeCopy(nome, pai).getUrl();
+}
+/** Primeira vez: testa numa cópia, faz cópia de segurança, ordena e liga a ordenação de hora a hora. */
+function primeiraOrdenacao() {
+  if (!testarOrdenacao()) throw new Error('O teste na cópia falhou; não mexi no ficheiro.');
+  Logger.log('Cópia de segurança: ' + copiaSeguranca_());
+  ordenarTesla();
+  instalarOrdenacao();
 }
 
 /** Se a linha nova ficar fora da tabela do Excel, alarga a tabela até ela. */
@@ -323,25 +434,6 @@ function alargarTabela_(x, n) {
   });
 }
 
-/** Desfaz um registo: só apaga a linha se ainda tiver exatamente o que foi gravado. */
-function anularMovimento_(fileId, p) {
-  const n = parseInt(p.linha, 10);
-  if (!(n > 3)) throw new Error('Linha inválida.');
-  const x = abrirXlsx_(fileId);
-  if (x.nativo) return anularNativo_(x.file, p);
-  let xml = x.by[x.caminho].getDataAsString('UTF-8');
-  const linhas = mapaLinhas_(xml), r = linhas[n];
-  const igual = r && Number(valorCelula_(r, 'C', n)) === serialData_(String(p.data)) &&
-                Math.abs(Number(valorCelula_(r, 'F', n)) - Number(p.valor)) < 0.005 &&
-                String(valorCelula_(r, 'E', n)).trim() === String(p.descricao).trim();
-  if (!igual) throw new Error('A linha ' + n + ' já foi alterada na folha; não a apaguei. Corrija diretamente no ficheiro.');
-  const rowTag = r.match(/<row [^>]*>/)[0].replace(/\/>$/, '>');
-  const vazia = rowTag + '<c r="C' + n + '"' + estiloCelula_(r, 'C', n) + '/><c r="F' + n + '"' + estiloCelula_(r, 'F', n) + '/></row>';
-  xml = xml.replace(r, vazia);
-  gravarXlsx_(x, xml);
-  return { ok: true, linha: n };
-}
-
 /* Mesma coisa para quando a folha for uma Google Sheet normal */
 function abaNativa_(file) {
   const sh = SpreadsheetApp.openById(file.getId()).getSheetByName(ABA_REGISTO);
@@ -352,20 +444,23 @@ function adicionarNativo_(file, mov) {
   const sh = abaNativa_(file);
   const col = sh.getRange('C4:F' + sh.getMaxRows()).getValues();
   let i = 0; while (i < col.length && (col[i][0] !== '' || col[i][3] !== '')) i++;
-  const n = i + 4, d0 = sh.getRange('C4').getValue();
+  const n = i + 4, semana = semanaDe_(mov.data);
   const [y, m, d] = mov.data.split('-').map(Number), dt = new Date(y, m - 1, d);
-  const seg0 = d0 instanceof Date ? new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() - ((d0.getDay() + 6) % 7)) : dt;
-  const semana = Math.floor((dt - seg0) / (7 * 864e5)) + 1;
   sh.getRange(n, 2, 1, 8).setValues([[semana, dt, mov.tipo, mov.descricao, mov.valor, '=MONTH(C' + n + ')', '=YEAR(C' + n + ')', mov.quem]]);
+  ordenarNativo_(sh);
   return { ok: true, linha: n, semana: semana, data: mov.data, tipo: mov.tipo, descricao: mov.descricao, valor: mov.valor, mes: mov.mes, ano: mov.ano, quem: mov.quem };
 }
+function ordenarNativo_(sh) {
+  const n = sh.getRange('C4:C' + sh.getMaxRows()).getValues().reduce((u, r, i) => r[0] !== '' ? i + 4 : u, 3);
+  if (n > 4) sh.getRange(4, 2, n - 3, 8).sort({ column: 3, ascending: false });
+}
 function anularNativo_(file, p) {
-  const sh = abaNativa_(file), n = parseInt(p.linha, 10);
-  const v = sh.getRange(n, 2, 1, 8).getValues()[0];
-  if (String(v[3]).trim() !== String(p.descricao).trim() || Math.abs(Number(v[4]) - Number(p.valor)) >= 0.005)
-    throw new Error('A linha ' + n + ' já foi alterada na folha; não a apaguei.');
-  sh.getRange(n, 2, 1, 8).clearContent();
-  return { ok: true, linha: n };
+  const sh = abaNativa_(file), vals = sh.getRange(4, 2, Math.max(sh.getLastRow() - 3, 1), 8).getValues();
+  const i = vals.findIndex(v => String(v[3]).trim() === String(p.descricao).trim() && Math.abs(Number(v[4]) - Number(p.valor)) < 0.005 && data_(v[1]) === String(p.data));
+  if (i < 0) throw new Error('Não encontrei esse registo na folha; não apaguei nada.');
+  sh.getRange(i + 4, 2, 1, 8).clearContent();
+  ordenarNativo_(sh);
+  return { ok: true, linha: i + 4 };
 }
 
 /** Teste numa CÓPIA do ficheiro (não mexe no original). Ver "Registo de execução". */
