@@ -72,6 +72,10 @@
   .tab{background:rgba(255,255,255,.08);color:#cbd5e1;border:0;border-radius:999px;padding:8px 16px;font:600 14px system-ui;cursor:pointer}
   .tab.on{background:var(--accent);color:#111}
   .hidden{display:none !important}
+  .portao{max-width:640px;margin:28px auto;padding:0 16px}
+  .portao p{color:var(--muted)}
+  .portao a{color:#fff}
+  .portao-botoes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
   .dash{max-width:960px;margin:-40px auto 40px;padding:0 16px;display:grid;gap:16px}
   .filtros{display:flex;flex-wrap:wrap;gap:8px}
   .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;font:600 13px system-ui;cursor:pointer}
@@ -264,6 +268,18 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
     <button class="tab so-interno" data-view="viewTvde">Dashboard TVDE</button>
   </nav>
 </header>
+
+<section id="portao" class="portao hidden">
+  <div class="card">
+    <h2>Entre para agendar</h2>
+    <p>Para agendar um transfer precisa de uma conta GrowuP Driving. Com a conta, os seus dados ficam preenchidos em cada agendamento, vê o histórico das suas viagens e os horários já ocupados.</p>
+    <div class="portao-botoes">
+      <button class="btn btn-accent" id="portaoEntrar">Entrar</button>
+      <button class="btn btn-ghost" id="portaoRegisto">Criar conta</button>
+    </div>
+    <p class="tabela">A palavra-passe é criada automaticamente e enviada para o seu email. Só quer ver os horários livres? <a href="reserva.html">Ver horários ocupados</a> · Dúvidas: <a href="tel:+351969259112">969 259 112</a></p>
+  </div>
+</section>
 
 <main id="viewAgendar">
   <!-- FORMULÁRIO -->
@@ -997,6 +1013,8 @@ function atualizarConta(){
   const info = $("contaInfo"); info.classList.toggle("hidden", !c); info.innerHTML = "";
   if (c) info.append("A agendar como ", Object.assign(document.createElement("b"), { textContent: c.nome + " " + c.apelido }), ` · ${c.tel}`);
   $("cardViagens").classList.toggle("hidden", !c);
+  const livre = !!c || admin;   // o formulário só aparece com sessão de cliente (ou com o código de gestão)
+  $("portao").classList.toggle("hidden", livre); $("viewAgendar").classList.toggle("hidden", !livre);
   $("cardAgendamentos").classList.toggle("hidden", !admin && !agendamentos.length);
   if (c) carregarViagens();
 }
@@ -1041,6 +1059,8 @@ async function pedirComoCliente(a){
   finally{ b.disabled = false; }
 }
 $("btnConta").onclick = () => abrirConta();
+$("portaoEntrar").onclick = () => abrirConta("entrar");
+$("portaoRegisto").onclick = () => abrirConta("registo");
 $("contaFechar").onclick = () => $("dlgConta").close();
 document.querySelectorAll("#contaTabs .subtab").forEach(b => b.onclick = () => { mostrarAbaConta(b.dataset.c); contaMsg(""); });
 $("ceEntrar").onclick = async () => {
@@ -1977,7 +1997,7 @@ $("dlgSave").onclick = () => {
   store.set("cfg_whats", $("cfgWhats").value.trim());
   store.set("cfg_script", $("cfgScript").value.trim()); store.set("cfg_token", $("cfgToken").value.trim());
   store.set("cfg_folha", $("cfgFolha").value.trim());
-  $("dlg").close();
+  $("dlg").close(); atualizarConta();
 };
 
 /* ================== ARRANQUE ================== */
@@ -1991,6 +2011,8 @@ $("dlgSave").onclick = () => {
   renderDash();
   atualizarConta();
   puxarDaFolha();
+  const pedido = location.hash.slice(1);   // index.html liga para #entrar ou #registo
+  if (!clienteAtual() && (pedido === "entrar" || pedido === "registo")) abrirConta(pedido);
   carregarScript(OSM.LEAFLET_JS, () => window.L).catch(() => {});   // prepara o mapa
 })();
 </script>

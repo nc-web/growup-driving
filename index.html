@@ -31,6 +31,15 @@
   a.app h2{margin:0 0 8px;font-size:15px;letter-spacing:.22em;text-transform:uppercase}
   a.app h2::after{content:"";display:block;width:40px;height:2px;background:var(--red);margin-top:8px}
   a.app p{margin:0 0 16px;color:var(--muted);font-size:14px}
+  div.app{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--red);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  div.app h2{margin:0 0 8px;font-size:15px;letter-spacing:.22em;text-transform:uppercase}
+  div.app h2::after{content:"";display:block;width:40px;height:2px;background:var(--red);margin-top:8px}
+  div.app p{margin:0 0 16px;color:var(--muted);font-size:14px}
+  .acoes{display:flex;flex-wrap:wrap;gap:10px}
+  .acoes .b{display:inline-block;background:var(--red);color:#fff;font-weight:700;border-radius:10px;padding:10px 16px;font-size:14px;text-decoration:none;border:1px solid var(--red)}
+  .acoes .b:hover{filter:brightness(1.1)}
+  .acoes .b2{background:transparent;color:var(--ink);border-color:var(--line)}
+  .acoes .b2:hover{border-color:var(--red)}
   a.app span{display:inline-block;background:var(--red);color:#fff;font-weight:700;border-radius:10px;padding:10px 16px;font-size:14px}
   .nota{grid-column:1/-1;color:var(--muted);font-size:13px;text-align:center}
   footer{text-align:center;color:#7d8696;font-size:12px;letter-spacing:.2em;padding:0 16px 28px}
@@ -53,14 +62,14 @@
   </div>
 </header>
 <main>
-  <a class="app" href="agendamento-transfers.html">
+  <div class="app">
     <h2>Transfers</h2>
-    <p>Agendar transfers e viagens privadas com distância, preço e mapa do percurso, lista de agendamentos, link para o cliente e Google Calendar.</p>
-    <span>Abrir agendamento →</span>
-  </a>
+    <p>Agende transfers e viagens privadas com preço e mapa do percurso. Com a sua conta, os dados ficam preenchidos e vê o histórico das suas viagens.</p>
+    <div class="acoes"><a class="b" href="agendamento-transfers.html#entrar">Entrar e agendar →</a><a class="b b2" href="agendamento-transfers.html#registo">Criar conta</a></div>
+  </div>
   <a class="app" href="reserva.html">
     <h2>Reservas</h2>
-    <p>Página para os clientes: horários já ocupados e, com o link enviado pela GrowuP Driving, os detalhes do próprio transfer.</p>
+    <p>Veja os horários já ocupados nos próximos dias e, com o link enviado pela GrowuP Driving, os detalhes do seu transfer.</p>
     <span>Ver horários →</span>
   </a>
 </main>

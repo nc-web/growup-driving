@@ -17,7 +17,7 @@ Fundo escuro `#15181f`/`#1c2029` com riscas diagonais, vermelho `#e31b2b`, letra
 ## Ficheiros
 | Ficheiro | O que é |
 |---|---|
-| `index.html` | Página inicial pública (cartões Transfers e Reservas). |
+| `index.html` | Página inicial pública: cartão Transfers com **Entrar e agendar** (`agendamento-transfers.html#entrar`) e **Criar conta** (`#registo`); cartão Reservas. |
 | `agendamento-transfers.html` | Agendamento: formulário, mapa do percurso, preço, **Confirmar agendamento**, WhatsApp, lista de agendamentos (estado, link do cliente, Google Calendar, publicar). A barra de separadores está escondida; o código antigo dos separadores Transfers/TVDE ficou no ficheiro sem uso (não é preciso atualizá-lo). |
 | `dashboard-tvde.html` | Dashboard (mantido só aqui). Separadores: 📊 Painel, ➕ Registar movimento, 💶 Registar lucro, 🚗 Transfers. No site público só abre com `?gestao` (sem isso redireciona para `./`); `#transfers` abre esse separador. |
 | `gestao.html` | Página de gestão (noindex) com links para `dashboard-tvde.html?gestao#transfers` e `dashboard-tvde.html?gestao`. |
@@ -35,6 +35,7 @@ Site: https://nc-web.github.io/growup-driving/ · gestão: `/gestao.html` · rep
 - Botões por agendamento: Concluída / Cancelar / Repor, 🔗 Copiar link do cliente, 💬 Enviar link ao cliente (wa.me para o telemóvel do cliente, 9 dígitos → prefixo 351), 📅 Google Calendar (link TEMPLATE, fuso Europe/Lisbon, duração = viagem + 15 min, mínimo 30), ☁️ Publicar. **Sem** exportação iPhone/.ics (removida a pedido).
 
 ## Contas de clientes (agendamento-transfers.html)
+- **O formulário só aparece com sessão iniciada** (ou com o código de gestão/TOKEN). Sem isso mostra o cartão `#portao` "Entre para agendar" (Entrar / Criar conta, link para os horários ocupados e telefone); `atualizarConta()` alterna `#portao`/`#viewAgendar`. `#entrar` e `#registo` no URL abrem logo o diálogo.
 - Botão **👤 Entrar / Criar conta** no topo (diálogo `#dlgConta`: Entrar, Criar conta, A minha conta). Registo: primeiro nome, apelido, telemóvel, email + aceitar privacidade. A palavra-passe (10 caracteres) é **gerada no servidor e enviada por email** (MailApp, remetente "GrowuP Driving"); "Esqueci-me" envia uma nova. Em "A minha conta" pode mudá-la (mín. 8).
 - Guardadas na aba **"Clientes"** da folha "GrowuP Transfers · Agendamentos" (ID, NOME, APELIDO, TELEMÓVEL, EMAIL, HASH, SAL, CRIADO, ÚLTIMO ACESSO). Palavra-passe só como hash SHA-256 com sal (500 iterações). Sessão: token HMAC assinado com ScriptProperties `segredoSessao`, válido 30 dias, em `localStorage.cliente_sessao` (+ `cliente`). Limites por CacheService (3 registos/email/h, 40 registos/h, 8 entradas/15 min, 10 pedidos/h).
 - Com sessão iniciada a linha Nome/Telemóvel (`#linhaNomeTel`) desaparece e o pedido vai por `pedidoCliente` (servidor valida data futura, sobreposição com horários ocupados e **recalcula o preço**; grava com EMAIL CLIENTE e envia aviso por email ao dono). Sem sessão e sem TOKEN, "Confirmar agendamento" abre o diálogo de entrada. Com TOKEN (gestão) o fluxo antigo mantém-se.
