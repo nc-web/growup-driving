@@ -171,6 +171,7 @@ const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
 function doPost(e) {
   let p = {};
   try { p = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (x) {}
+  if (CLIENTE_ACOES[p.acao]) return publico_(() => CLIENTE_ACOES[p.acao](p));   // contas de clientes (sem TOKEN)
   if (p.token !== TOKEN) return json_({ erro: 'Token inválido' });
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) return json_({ erro: 'A folha está a ser atualizada por outro pedido. Tente outra vez.' });
@@ -637,14 +638,16 @@ function testarLucros() {
 
 /* ---------- Agendamentos de transfers (folha "GrowuP Transfers · Agendamentos") ---------- */
 const AGENDA_NOME = 'GrowuP Transfers · Agendamentos';
-const AGENDA_CAB = ['ID', 'CÓDIGO', 'DATA', 'HORA', 'DURAÇÃO (MIN)', 'NOME', 'TELEMÓVEL', 'RECOLHA', 'CHEGADA', 'KM', 'PREÇO', 'PAX', 'MALAS', 'NOTAS', 'ESTADO', 'ATUALIZADO'];
+const AGENDA_CAB = ['ID', 'CÓDIGO', 'DATA', 'HORA', 'DURAÇÃO (MIN)', 'NOME', 'TELEMÓVEL', 'RECOLHA', 'CHEGADA', 'KM', 'PREÇO', 'PAX', 'MALAS', 'NOTAS', 'ESTADO', 'ATUALIZADO', 'EMAIL CLIENTE'];
 const AGENDA_ESTADOS = ['agendada', 'concluida', 'cancelada'];
 
 /** Folha Google com os agendamentos (criada na primeira vez, na Drive do dono do script). */
 function folhaAgenda_() {
   const props = PropertiesService.getScriptProperties();
   const id = props.getProperty('agendaId');
-  if (id) { try { const ss = SpreadsheetApp.openById(id); return ss.getSheets()[0]; } catch (e) {} }
+  if (id) { try { const ss = SpreadsheetApp.openById(id), sh = ss.getSheets()[0];
+    if (sh.getLastColumn() < AGENDA_CAB.length) sh.getRange(1, 1, 1, AGENDA_CAB.length).setValues([AGENDA_CAB]).setFontWeight('bold').setBackground('#1c2029').setFontColor('#ffffff');
+    return sh; } catch (e) {} }
   const ss = SpreadsheetApp.create(AGENDA_NOME), sh = ss.getSheets()[0];
   sh.setName('Agendamentos');
   sh.getRange(1, 1, sh.getMaxRows(), AGENDA_CAB.length).setNumberFormat('@');   // tudo como texto (datas e horas não mudam)
@@ -677,7 +680,8 @@ function guardarAgendamento_(p) {
   const dur = Math.max(30, Math.ceil((Number(a.segundos) || 0) / 60) + 15);
   const valores = [[id, codigo, a.data, a.hora, String(dur), txtA_(a.nome, 80), txtA_(a.tel, 30), txtA_(a.origem), txtA_(a.destino),
     String(Math.round((Number(a.km) || 0) * 10) / 10), String(Math.round((Number(a.preco) || 0) * 100) / 100), txtA_(a.pax, 3), txtA_(a.malas, 3),
-    txtA_(a.notas, 300), estado, Utilities.formatDate(new Date(), 'Europe/Lisbon', 'yyyy-MM-dd HH:mm')]];
+    txtA_(a.notas, 300), estado, Utilities.formatDate(new Date(), 'Europe/Lisbon', 'yyyy-MM-dd HH:mm'),
+    txtA_(a.email, 100).toLowerCase() || (i >= 0 ? String(linhas[i][16] || '') : '')]];
   const linha = i >= 0 ? i + 2 : sh.getLastRow() + 1;
   sh.getRange(linha, 1, 1, AGENDA_CAB.length).setNumberFormat('@').setValues(valores);
   return { ok: true, id: id, codigo: codigo, estado: estado };
@@ -689,11 +693,180 @@ function removerAgendamento_(p) {
   return { ok: true, removido: i >= 0 };
 }
 
+/* ---------- Contas de clientes (registo, entrada, histórico e pedidos) ---------- */
+// Guardadas na aba "Clientes" da folha "GrowuP Transfers · Agendamentos" (Drive do dono do script).
+// A palavra-passe é gerada automaticamente, enviada por email e guardada só como hash (SHA-256 com sal).
+const CLIENTES_CAB = ['ID', 'NOME', 'APELIDO', 'TELEMÓVEL', 'EMAIL', 'HASH', 'SAL', 'CRIADO', 'ÚLTIMO ACESSO'];
+const SESSAO_DIAS = 30;
+const CLIENTE_ACOES = {
+  registar: p => comLock_(() => registarCliente_(p)),
+  entrar: p => entrarCliente_(p),
+  recuperar: p => comLock_(() => recuperarCliente_(p)),
+  alterarPassword: p => comLock_(() => alterarPassword_(p)),
+  minhasViagens: p => minhasViagens_(p),
+  pedidoCliente: p => comLock_(() => pedidoCliente_(p))
+};
+function comLock_(fn) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) throw new Error('O sistema está ocupado. Tente outra vez daqui a pouco.');
+  try { return fn(); } finally { lock.releaseLock(); }
+}
+function folhaClientes_() {
+  const ss = folhaAgenda_().getParent();
+  let sh = ss.getSheetByName('Clientes');
+  if (!sh) {
+    sh = ss.insertSheet('Clientes');
+    sh.getRange(1, 1, sh.getMaxRows(), CLIENTES_CAB.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, CLIENTES_CAB.length).setValues([CLIENTES_CAB]).setFontWeight('bold').setBackground('#1c2029').setFontColor('#ffffff');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+const emailOk_ = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+const tel9_ = t => String(t || '').replace(/\D/g, '').slice(-9);
+function limitar_(chave, max, segundos) {
+  const c = CacheService.getScriptCache(), n = Number(c.get('lim:' + chave) || 0);
+  if (n >= max) throw new Error('Demasiadas tentativas. Aguarde um pouco e tente outra vez.');
+  c.put('lim:' + chave, String(n + 1), segundos);
+}
+function hashPass_(sal, pass) {
+  let h = sal + '|' + pass;
+  for (let i = 0; i < 500; i++) h = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, h + sal, Utilities.Charset.UTF_8));
+  return h;
+}
+function aleatorio_(n, abc) {
+  abc = abc || 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, Utilities.getUuid() + Utilities.getUuid() + Date.now());
+  let s = ''; for (let i = 0; i < n; i++) s += abc[(b[i % b.length] + 256 + i * 7) % abc.length];
+  return s;
+}
+function segredoSessao_() {
+  const p = PropertiesService.getScriptProperties();
+  let s = p.getProperty('segredoSessao');
+  if (!s) { s = Utilities.getUuid() + Utilities.getUuid(); p.setProperty('segredoSessao', s); }
+  return s;
+}
+function criarSessao_(id) {
+  const corpo = Utilities.base64EncodeWebSafe(JSON.stringify({ id: String(id), exp: Date.now() + SESSAO_DIAS * 864e5 }));
+  return corpo + '.' + Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(corpo, segredoSessao_()));
+}
+/** Devolve { linha, c: {id, nome, apelido, tel, email} } do cliente da sessão, ou erro. */
+function clienteDaSessao_(sessao) {
+  const [corpo, assinatura] = String(sessao || '').split('.');
+  if (!corpo || assinatura !== Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(corpo, segredoSessao_())))
+    throw new Error('Sessão inválida. Entre outra vez.');
+  const d = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(corpo)).getDataAsString());
+  if (!(d.exp > Date.now())) throw new Error('A sessão expirou. Entre outra vez.');
+  const r = procurarCliente_(x => String(x[0]) === d.id);
+  if (!r) throw new Error('Conta não encontrada.');
+  return r;
+}
+function procurarCliente_(teste) {
+  const sh = folhaClientes_(), n = sh.getLastRow();
+  if (n < 2) return null;
+  const vals = sh.getRange(2, 1, n - 1, CLIENTES_CAB.length).getValues();
+  const i = vals.findIndex(teste);
+  if (i < 0) return null;
+  const r = vals[i];
+  return { linha: i + 2, c: { id: String(r[0]), nome: String(r[1]), apelido: String(r[2]), tel: String(r[3]), email: String(r[4]) }, hash: String(r[5]), sal: String(r[6]) };
+}
+function enviarEmailCliente_(para, nome, pass, nova) {
+  const site = 'https://nc-web.github.io/growup-driving/agendamento-transfers.html';
+  const html = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;background:#15181f;color:#f3f4f6;border-radius:14px;overflow:hidden">' +
+    '<div style="background:#1c2029;border-bottom:3px solid #e31b2b;padding:20px 24px"><b style="font-size:24px;color:#fff">Grow<span style="color:#e31b2b">uP</span></b>' +
+    '<div style="letter-spacing:6px;font-size:11px;color:#fff">DRIVING</div></div><div style="padding:24px">' +
+    '<p>Olá ' + escXml_(nome) + ',</p><p>' + (nova ? 'A sua conta GrowuP Driving foi criada.' : 'Foi pedida uma nova palavra-passe para a sua conta GrowuP Driving.') + '</p>' +
+    '<p>Para entrar use o seu email e esta palavra-passe:</p>' +
+    '<p style="font-size:22px;font-weight:bold;letter-spacing:2px;background:#232833;border-left:4px solid #e31b2b;padding:12px 16px;border-radius:8px;color:#fff">' + escXml_(pass) + '</p>' +
+    '<p><a href="' + site + '" style="display:inline-block;background:#e31b2b;color:#fff;text-decoration:none;font-weight:bold;padding:12px 18px;border-radius:10px">Entrar e agendar</a></p>' +
+    '<p style="color:#a3aab8;font-size:13px">Pode mudar a palavra-passe depois de entrar, em "A minha conta". Se não pediu isto, ignore este email.</p>' +
+    '<p style="color:#a3aab8;font-size:12px;letter-spacing:2px">PROFISSIONALISMO · CONFORTO · QUALIDADE</p></div></div>';
+  MailApp.sendEmail({ to: para, subject: nova ? 'A sua conta GrowuP Driving' : 'Nova palavra-passe GrowuP Driving', name: 'GrowuP Driving', htmlBody: html,
+    body: 'Olá ' + nome + ',\nA sua palavra-passe GrowuP Driving: ' + pass + '\nEntrar: ' + site });
+}
+function registarCliente_(p) {
+  const nome = txtA_(p.nome, 40), apelido = txtA_(p.apelido, 40), tel = txtA_(p.tel, 20), email = txtA_(p.email, 100).toLowerCase();
+  if (nome.length < 2 || apelido.length < 2) throw new Error('Indique o primeiro e o último nome.');
+  if (tel9_(tel).length < 9) throw new Error('Telemóvel inválido.');
+  if (!emailOk_(email)) throw new Error('Email inválido.');
+  if (p.aceito !== true) throw new Error('É preciso aceitar a política de privacidade.');
+  limitar_('reg:' + email, 3, 3600); limitar_('reg:todos', 40, 3600);
+  if (procurarCliente_(r => String(r[4]).toLowerCase() === email))
+    throw new Error('Já existe uma conta com este email. Use "Esqueci-me da palavra-passe" para receber uma nova.');
+  const pass = aleatorio_(10), sal = aleatorio_(16), id = String(Date.now());
+  enviarEmailCliente_(email, nome, pass, true);   // primeiro o email: se falhar, a conta não fica criada
+  const sh = folhaClientes_(), agora = Utilities.formatDate(new Date(), 'Europe/Lisbon', 'yyyy-MM-dd HH:mm');
+  sh.getRange(sh.getLastRow() + 1, 1, 1, CLIENTES_CAB.length).setNumberFormat('@').setValues([[id, nome, apelido, tel, email, hashPass_(sal, pass), sal, agora, '']]);
+  return { ok: true, email: email };
+}
+function entrarCliente_(p) {
+  const email = txtA_(p.email, 100).toLowerCase(), pass = String(p.password || '');
+  limitar_('login:' + email, 8, 900);
+  const r = procurarCliente_(x => String(x[4]).toLowerCase() === email);
+  if (!r || hashPass_(r.sal, pass) !== r.hash) throw new Error('Email ou palavra-passe incorretos.');
+  folhaClientes_().getRange(r.linha, 9).setValue(Utilities.formatDate(new Date(), 'Europe/Lisbon', 'yyyy-MM-dd HH:mm'));
+  return { ok: true, sessao: criarSessao_(r.c.id), cliente: r.c };
+}
+function recuperarCliente_(p) {
+  const email = txtA_(p.email, 100).toLowerCase();
+  if (!emailOk_(email)) throw new Error('Email inválido.');
+  limitar_('rec:' + email, 3, 3600);
+  const r = procurarCliente_(x => String(x[4]).toLowerCase() === email);
+  if (r) {
+    const pass = aleatorio_(10), sal = aleatorio_(16);
+    enviarEmailCliente_(email, r.c.nome, pass, false);
+    folhaClientes_().getRange(r.linha, 6, 1, 2).setValues([[hashPass_(sal, pass), sal]]);
+  }
+  return { ok: true };   // a mesma resposta exista ou não a conta
+}
+function alterarPassword_(p) {
+  const r = clienteDaSessao_(p.sessao), nova = String(p.nova || '');
+  if (hashPass_(r.sal, String(p.atual || '')) !== r.hash) throw new Error('A palavra-passe atual não está correta.');
+  if (nova.length < 8) throw new Error('A nova palavra-passe tem de ter pelo menos 8 caracteres.');
+  const sal = aleatorio_(16);
+  folhaClientes_().getRange(r.linha, 6, 1, 2).setValues([[hashPass_(sal, nova), sal]]);
+  return { ok: true };
+}
+function minhasViagens_(p) {
+  const r = clienteDaSessao_(p.sessao), email = r.c.email.toLowerCase(), t9 = tel9_(r.c.tel);
+  const viagens = linhasAgenda_(folhaAgenda_())
+    .filter(x => String(x[16] || '').toLowerCase() === email || (t9 && tel9_(x[6]) === t9))
+    .map(x => ({ data: String(x[2]), hora: String(x[3]), duracao: Number(x[4]) || 30, origem: String(x[7]), destino: String(x[8]),
+                 km: Number(x[9]) || 0, preco: Number(x[10]) || 0, pax: String(x[11]), malas: String(x[12]), estado: String(x[14]) || 'agendada', codigo: String(x[1]) }))
+    .sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora));
+  return { ok: true, cliente: r.c, viagens: viagens };
+}
+const minutos_ = h => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; };
+function pedidoCliente_(p) {
+  const r = clienteDaSessao_(p.sessao), a = p.agendamento || {};
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(a.data)) || !/^\d{2}:\d{2}$/.test(String(a.hora))) throw new Error('Data ou hora inválida.');
+  const quando = new Date(a.data + 'T' + a.hora + ':00');
+  if (quando.getTime() < Date.now()) throw new Error('A data e hora têm de ser no futuro.');
+  if (!txtA_(a.origem) || !txtA_(a.destino)) throw new Error('Indique a recolha e a chegada.');
+  limitar_('pedido:' + r.c.id, 10, 3600);
+  const dur = Math.max(30, Math.ceil((Number(a.segundos) || 0) / 60) + 15), ini = minutos_(a.hora), fim = ini + dur;
+  const choque = horariosOcupados_().ocupados.find(o => o.data === a.data && ini < minutos_(o.hora) + o.duracao && minutos_(o.hora) < fim);
+  if (choque) throw new Error('Esse horário já está ocupado (' + choque.hora + '). Escolha outra hora.');
+  const km = Math.round((Number(a.km) || 0) * 10) / 10;
+  const preco = Math.round((5 + Math.max(0, Math.ceil(km - 5)) * 0.8) * 100) / 100;   // calculado no servidor (5 € até 5 km + 0,80 €/km)
+  const id = String(Date.now());
+  const g = guardarAgendamento_({ agendamento: { id: id, data: a.data, hora: a.hora, nome: r.c.nome + ' ' + r.c.apelido, tel: r.c.tel, email: r.c.email,
+    origem: a.origem, destino: a.destino, km: km, segundos: a.segundos, preco: preco, pax: a.pax, malas: a.malas, notas: a.notas, estado: 'agendada' } });
+  try {   // aviso ao dono do script
+    MailApp.sendEmail({ to: Session.getEffectiveUser().getEmail(), name: 'GrowuP Driving',
+      subject: 'Novo agendamento: ' + r.c.nome + ' ' + r.c.apelido + ' · ' + a.data + ' ' + a.hora,
+      body: 'Novo agendamento feito por um cliente com conta.\n\n' + a.data + ' às ' + a.hora + '\nRecolha: ' + a.origem + '\nChegada: ' + a.destino +
+            '\n' + km + ' km · ' + preco.toFixed(2) + ' €\nCliente: ' + r.c.nome + ' ' + r.c.apelido + ' · ' + r.c.tel + ' · ' + r.c.email + (a.notas ? '\nNotas: ' + a.notas : '') });
+  } catch (e) {}
+  return { ok: true, id: Number(id), codigo: g.codigo, preco: preco, km: km };
+}
+
 /** Lista completa (com TOKEN) para o separador Transfers do dashboard. */
 function listarAgendamentos_() {
   return { atualizado: new Date().toISOString(), agendamentos: linhasAgenda_(folhaAgenda_()).filter(r => String(r[0])).map(r => ({
     id: Number(r[0]), data: String(r[2]), hora: String(r[3]), nome: String(r[5]), tel: String(r[6]), origem: String(r[7]), destino: String(r[8]),
-    km: Number(r[9]) || 0, preco: Number(r[10]) || 0, pax: String(r[11]), malas: String(r[12]), estado: String(r[14]) || 'agendada' })) };
+    km: Number(r[9]) || 0, preco: Number(r[10]) || 0, pax: String(r[11]), malas: String(r[12]), estado: String(r[14]) || 'agendada',
+    notas: String(r[13] || ''), codigo: String(r[1] || ''), email: String(r[16] || '') })) };
 }
 
 /** Público: o cliente vê só o seu agendamento, pelo código do link. */

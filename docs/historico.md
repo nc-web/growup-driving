@@ -39,3 +39,7 @@ Registo dos pedidos do Nuno e das decisões tomadas, por ordem. Serve de context
   - `agendamento-transfers.html`: só o agendamento, **mantendo "Confirmar agendamento"** e a lista.
   - O separador **Transfers** passou para dentro de `dashboard-tvde.html` (separador 🚗 Transfers), que lê a folha de agendamentos de todos os computadores.
   - `dashboard-tvde.html` no site só abre pelo link de gestão (`?gestao`, em `gestao.html`).
+
+## 8. Contas de clientes nos transfers (2026-11-06)
+- Pedido: registo com primeiro/último nome, telefone e email; palavra-passe gerada automaticamente e enviada por email; com conta, os agendamentos já não pedem Nome/Telemóvel; cada utilizador vê o histórico e os horários ocupados por outros; registos guardados na Drive do Nuno.
+- Feito: aba "Clientes" na folha de agendamentos, ações públicas no Apps Script (versão 13), diálogo de conta e "As minhas viagens" em `agendamento-transfers.html`. O Nuno autorizou a permissão de enviar email.

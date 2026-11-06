@@ -226,6 +226,16 @@
   #detalhe, #fonte{display:none}   /* detalhe do cálculo e fonte da distância ficam escondidos */
   .publico .so-interno{display:none!important}
   nav.tabs{display:none!important}   /* Transfers e Dashboard TVDE estão em dashboard-tvde.html */
+  .topo-botoes{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .conta-info{background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;padding:12px 14px;margin:0 0 14px;font-size:14px}
+  .conta-info b{color:#fff}
+  .conta-tabs{display:flex;gap:8px}
+  .ocupados-dia{margin:-4px 0 14px;font-size:13px;color:var(--muted)}
+  .ocupados-dia .ocup{display:inline-block;background:rgba(227,27,43,.16);color:#ff9aa2;border:1px solid rgba(227,27,43,.4);border-radius:8px;padding:2px 8px;margin:4px 4px 0 0;font-weight:600;font-variant-numeric:tabular-nums}
+  .ocupados-dia.choque{color:#ffb4b4}
+  .check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted)}
+  .check input{width:auto;margin-top:3px}
+  #dlgConta{width:min(560px,94vw)}
   .rodape-marca{max-width:960px;margin:0 auto 32px;padding:0 16px;color:#7d8696;font-size:11px;letter-spacing:.32em;text-align:center;text-transform:uppercase}
   .rodape-marca b{color:#c2c7d0;font-weight:600}
 
@@ -245,7 +255,8 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
       <div class="marca"><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="#e31b2b" stroke-width="7"/><path d="M22 80 C34 70 44 56 56 42 L66 31" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/><path d="M25 77 C36 68 45 56 56 43 L63 35" fill="none" stroke="#1a1d25" stroke-width="2" stroke-dasharray="5 4"/><path d="M58 24 L80 18 L74 40 Z" fill="#e31b2b"/></svg><div class="wm"><b>Grow<em>uP</em></b><span>DRIVING</span></div></div>
       <div class="titulo"><h1>Transfers · Agendamento de viagens</h1><p>Agende o seu transfer ou viagem privada</p></div>
     </div>
-    <button class="icon-btn" id="btnConfig" title="Definições">⚙️ Definições</button>
+    <div class="topo-botoes"><button class="icon-btn" id="btnConta" title="A minha conta">👤 Entrar</button>
+    <button class="icon-btn" id="btnConfig" title="Definições">⚙️ Definições</button></div>
   </div>
   <nav class="tabs">
     <button class="tab on" data-view="viewAgendar">Agendar</button>
@@ -268,6 +279,7 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
         <input type="time" id="hora" required>
       </div>
     </div>
+    <div class="ocupados-dia hidden" id="ocupadosDia"></div>
 
     <div class="field">
       <label for="origem"><span class="dot a"></span>Local de recolha (ponto A)</label>
@@ -281,7 +293,8 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
       <div class="suggest" id="sug-destino"></div>
     </div>
 
-    <div class="row">
+    <div class="conta-info hidden" id="contaInfo"></div>
+    <div class="row" id="linhaNomeTel">
       <div class="field">
         <label for="nome">Nome</label>
         <input id="nome" placeholder="Nome do cliente">
@@ -332,7 +345,12 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
       <div class="tabela" id="fonte"></div>
     </div>
 
-    <div class="card">
+    <div class="card hidden" id="cardViagens">
+      <h2>As minhas viagens</h2>
+      <div class="list" id="listaViagens"><div class="tabela">A carregar…</div></div>
+    </div>
+
+    <div class="card" id="cardAgendamentos">
       <h2>Agendamentos</h2>
       <div class="cal-topo"><a class="btn btn-ghost btn-sm" href="reserva.html" target="_blank" rel="noopener" style="text-decoration:none">🗓️ Página dos clientes (horários ocupados)</a><button class="btn btn-ghost btn-sm" id="btnSync" title="Publica na página dos clientes os agendamentos futuros que ainda não foram publicados">☁️ Publicar agendamentos</button></div>
       <div class="list" id="lista"><div class="tabela">Ainda sem agendamentos.</div></div>
@@ -617,6 +635,44 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
     <button class="btn btn-ghost" id="gCancelar">Cancelar</button>
     <button class="btn btn-dark" id="gContinuar">Continuar</button>
   </div>
+</dialog>
+
+<dialog id="dlgConta">
+  <div class="conta-tabs" id="contaTabs">
+    <button class="subtab on" data-c="entrar">Entrar</button>
+    <button class="subtab" data-c="registo">Criar conta</button>
+  </div>
+  <p class="tabela" id="contaAviso" style="margin:12px 0 0"></p>
+  <div id="cEntrar">
+    <div class="field"><label for="ceEmail">Email</label><input id="ceEmail" type="email" autocomplete="username"></div>
+    <div class="field"><label for="cePass">Palavra-passe</label><input id="cePass" type="password" autocomplete="current-password"></div>
+    <button class="btn btn-accent" id="ceEntrar">Entrar</button>
+    <button class="btn btn-ghost btn-sm" id="ceEsqueci" style="margin-top:8px">Esqueci-me da palavra-passe</button>
+  </div>
+  <div id="cRegisto" class="hidden">
+    <div class="row">
+      <div class="field"><label for="crNome">Primeiro nome</label><input id="crNome" autocomplete="given-name" maxlength="40"></div>
+      <div class="field"><label for="crApelido">Último nome</label><input id="crApelido" autocomplete="family-name" maxlength="40"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="crTel">Telemóvel</label><input id="crTel" type="tel" autocomplete="tel" placeholder="9xx xxx xxx"></div>
+      <div class="field"><label for="crEmail">Email</label><input id="crEmail" type="email" autocomplete="email"></div>
+    </div>
+    <label class="check" style="margin:4px 0 14px"><input type="checkbox" id="crAceito"> Aceito que a GrowuP Driving guarde estes dados para gerir os meus agendamentos. Posso pedir para apagar a conta a qualquer momento.</label>
+    <button class="btn btn-accent" id="crCriar">Criar conta e receber a palavra-passe por email</button>
+  </div>
+  <div id="cConta" class="hidden">
+    <p id="ccDados" style="margin-top:0"></p>
+    <h2 style="font-size:13px">Mudar palavra-passe</h2>
+    <div class="row">
+      <div class="field"><label for="ccAtual">Atual</label><input id="ccAtual" type="password" autocomplete="current-password"></div>
+      <div class="field"><label for="ccNova">Nova (mín. 8)</label><input id="ccNova" type="password" autocomplete="new-password"></div>
+    </div>
+    <button class="btn btn-ghost" id="ccMudar">Mudar palavra-passe</button>
+    <button class="btn btn-ghost" id="ccSair" style="margin-top:8px">Sair da conta</button>
+  </div>
+  <div class="msg" id="contaMsg"></div>
+  <div class="row" style="margin-top:12px"><button class="btn btn-ghost" id="contaFechar">Fechar</button></div>
 </dialog>
 
 <dialog id="dlgCodigo">
@@ -907,6 +963,165 @@ $("codigoGuardar").onclick = async () => {
 };
 $("codigoInput").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); $("codigoGuardar").click(); } });
 
+/* ================== CONTAS DE CLIENTES ================== */
+// O cliente cria conta (nome, apelido, telemóvel, email), recebe a palavra-passe por email e passa a agendar sem
+// preencher nome/telemóvel. Vê o histórico das suas viagens e os horários já ocupados. Dados na Drive (Apps Script).
+const clienteAtual = () => store.get("cliente", null);
+const clienteSessao = () => store.get("cliente_sessao", "");
+async function pedirCliente(corpo){
+  const r = await fetch(scriptUrl(), { method: "POST", body: JSON.stringify(corpo) });
+  let j; try{ j = JSON.parse(await r.text()); }catch(e){ throw new Error("resposta inesperada do servidor"); }
+  if (j.erro){ if (/sess[aã]o/i.test(j.erro)) sairConta(true); throw new Error(j.erro); }
+  return j;
+}
+function contaMsg(t, tipo){ const m = $("contaMsg"); m.textContent = t || ""; m.className = "msg " + (tipo || ""); }
+function abrirConta(aba, aviso){
+  const logado = !!clienteAtual();
+  $("contaTabs").classList.toggle("hidden", logado);
+  $("cConta").classList.toggle("hidden", !logado);
+  $("contaAviso").textContent = aviso || "";
+  if (logado){ const c = clienteAtual(); $("cEntrar").classList.add("hidden"); $("cRegisto").classList.add("hidden");
+    $("ccDados").innerHTML = ""; $("ccDados").append("Conta de ", Object.assign(document.createElement("b"), { textContent: c.nome + " " + c.apelido }), ` · ${c.tel} · ${c.email}`); }
+  else mostrarAbaConta(aba || "entrar");
+  contaMsg("");
+  if (!$("dlgConta").open) $("dlgConta").showModal();
+}
+function mostrarAbaConta(aba){
+  document.querySelectorAll("#contaTabs .subtab").forEach(b => b.classList.toggle("on", b.dataset.c === aba));
+  $("cEntrar").classList.toggle("hidden", aba !== "entrar"); $("cRegisto").classList.toggle("hidden", aba !== "registo");
+}
+function atualizarConta(){
+  const c = clienteAtual(), admin = !!scriptToken();
+  $("btnConta").textContent = c ? "👤 " + c.nome : "👤 Entrar / Criar conta";
+  $("linhaNomeTel").classList.toggle("hidden", !!c);
+  const info = $("contaInfo"); info.classList.toggle("hidden", !c); info.innerHTML = "";
+  if (c) info.append("A agendar como ", Object.assign(document.createElement("b"), { textContent: c.nome + " " + c.apelido }), ` · ${c.tel}`);
+  $("cardViagens").classList.toggle("hidden", !c);
+  $("cardAgendamentos").classList.toggle("hidden", !admin && !agendamentos.length);
+  if (c) carregarViagens();
+}
+function sairConta(silencio){
+  store.set("cliente", null); store.set("cliente_sessao", "");
+  if ($("dlgConta").open && !silencio) $("dlgConta").close();
+  atualizarConta();
+}
+async function carregarViagens(){
+  const el = $("listaViagens");
+  try{
+    const j = await pedirCliente({ acao: "minhasViagens", sessao: clienteSessao() });
+    store.set("cliente", j.cliente);
+    el.innerHTML = "";
+    if (!j.viagens.length){ el.innerHTML = '<div class="tabela">Ainda não tem viagens. Os transfers que agendar aparecem aqui.</div>'; return; }
+    const agora = new Date().toISOString().slice(0, 16);
+    [["Próximas", j.viagens.filter(v => v.data + "T" + v.hora >= agora && v.estado === "agendada").reverse()],
+     ["Histórico", j.viagens.filter(v => !(v.data + "T" + v.hora >= agora && v.estado === "agendada"))]].forEach(([titulo, lista]) => {
+      if (!lista.length) return;
+      el.appendChild(Object.assign(document.createElement("div"), { className: "tabela", textContent: titulo }));
+      lista.forEach(v => {
+        const div = document.createElement("div"); div.className = "booking";
+        const d = new Date(v.data + "T" + v.hora).toLocaleDateString("pt-PT", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+        div.innerHTML = `<div class="top"><span><span class="t"></span><span class="tag t-${v.estado}">${ESTADOS[v.estado] || v.estado}</span></span><span>${eur(v.preco)}</span></div><div class="muted o"></div><div class="muted d"></div>`;
+        div.querySelector(".t").textContent = `${d} · ${v.hora} `;
+        div.querySelector(".o").textContent = `${v.origem} → ${v.destino}`;
+        div.querySelector(".d").textContent = `${kmFmt(v.km)} · ${v.pax} pax · ${v.malas} malas`;
+        if (v.codigo){ const a = document.createElement("a"); a.href = RESERVA_URL + "?c=" + encodeURIComponent(v.codigo); a.target = "_blank"; a.rel = "noopener"; a.textContent = "Ver detalhes"; a.className = "muted"; div.appendChild(a); }
+        el.appendChild(div);
+      });
+    });
+  }catch(e){ el.innerHTML = ""; el.appendChild(Object.assign(document.createElement("div"), { className: "tabela", textContent: "Não foi possível carregar as viagens: " + e.message })); }
+}
+async function pedirComoCliente(a){
+  const b = $("btnAgendar"); b.disabled = true; mostrar("A enviar o agendamento…");
+  try{
+    const r = await pedirCliente({ acao: "pedidoCliente", sessao: clienteSessao(), agendamento:
+      { data: a.data, hora: a.hora, origem: a.origem, destino: a.destino, km: a.km, segundos: a.segundos, pax: a.pax, malas: a.malas, notas: a.notas } });
+    mostrar(`Agendamento confirmado para ${new Date(a.data + "T" + a.hora).toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "long" })} às ${a.hora} (${eur(r.preco)}). Pode vê-lo em "As minhas viagens".`, "ok");
+    ocupadosCache = null; verOcupados(); carregarViagens();
+  }catch(e){ mostrar("Não foi possível agendar: " + e.message, "err"); }
+  finally{ b.disabled = false; }
+}
+$("btnConta").onclick = () => abrirConta();
+$("contaFechar").onclick = () => $("dlgConta").close();
+document.querySelectorAll("#contaTabs .subtab").forEach(b => b.onclick = () => { mostrarAbaConta(b.dataset.c); contaMsg(""); });
+$("ceEntrar").onclick = async () => {
+  const email = $("ceEmail").value.trim(), password = $("cePass").value;
+  if (!email || !password) return contaMsg("Indique o email e a palavra-passe.", "err");
+  contaMsg("A entrar…");
+  try{
+    const r = await pedirCliente({ acao: "entrar", email, password });
+    store.set("cliente_sessao", r.sessao); store.set("cliente", r.cliente);
+    $("cePass").value = ""; $("dlgConta").close(); atualizarConta();
+    mostrar(`Olá ${r.cliente.nome}! Já pode agendar sem preencher o nome e o telemóvel.`, "ok");
+  }catch(e){ contaMsg(e.message, "err"); }
+};
+$("cePass").addEventListener("keydown", e => { if (e.key === "Enter") $("ceEntrar").click(); });
+$("ceEsqueci").onclick = async () => {
+  const email = $("ceEmail").value.trim();
+  if (!email) return contaMsg("Escreva primeiro o seu email.", "err");
+  contaMsg("A enviar…");
+  try{ await pedirCliente({ acao: "recuperar", email }); contaMsg("Se existir uma conta com este email, vai receber uma nova palavra-passe dentro de momentos.", "ok"); }
+  catch(e){ contaMsg(e.message, "err"); }
+};
+$("crCriar").onclick = async () => {
+  const d = { nome: $("crNome").value.trim(), apelido: $("crApelido").value.trim(), tel: $("crTel").value.trim(), email: $("crEmail").value.trim(), aceito: $("crAceito").checked };
+  if (!d.nome || !d.apelido || !d.tel || !d.email) return contaMsg("Preencha o primeiro e último nome, o telemóvel e o email.", "err");
+  if (!d.aceito) return contaMsg("Para criar a conta tem de aceitar a guarda dos dados.", "err");
+  const b = $("crCriar"); b.disabled = true; contaMsg("A criar a conta…");
+  try{
+    await pedirCliente(Object.assign({ acao: "registar" }, d));
+    mostrarAbaConta("entrar"); $("ceEmail").value = d.email; $("cePass").focus();
+    contaMsg(`Conta criada! Enviámos a palavra-passe para ${d.email}. Veja também a pasta de spam.`, "ok");
+  }catch(e){ contaMsg(e.message, "err"); }
+  finally{ b.disabled = false; }
+};
+$("ccMudar").onclick = async () => {
+  const atual = $("ccAtual").value, nova = $("ccNova").value;
+  if (nova.length < 8) return contaMsg("A nova palavra-passe tem de ter pelo menos 8 caracteres.", "err");
+  try{ await pedirCliente({ acao: "alterarPassword", sessao: clienteSessao(), atual, nova }); $("ccAtual").value = $("ccNova").value = ""; contaMsg("Palavra-passe alterada.", "ok"); }
+  catch(e){ contaMsg(e.message, "err"); }
+};
+$("ccSair").onclick = () => sairConta();
+
+/* Horários já ocupados no dia escolhido (sem dados pessoais) */
+let ocupadosCache = null, ocupadosEm = 0;
+const minutosDe = h => { const [a, b] = String(h).split(":").map(Number); return a * 60 + b; };
+const horaDe = m => `${p2(Math.floor(m / 60) % 24)}:${p2(m % 60)}`;
+async function verOcupados(){
+  const dia = $("data").value, el = $("ocupadosDia");
+  if (!dia){ el.classList.add("hidden"); return; }
+  try{
+    if (!ocupadosCache || Date.now() - ocupadosEm > 120e3){
+      const j = await (await fetch(scriptUrl() + "?modo=ocupados")).json(); ocupadosCache = j.ocupados || []; ocupadosEm = Date.now(); }
+  }catch(e){ el.classList.add("hidden"); return; }
+  const doDia = ocupadosCache.filter(o => o.data === dia);
+  el.classList.remove("hidden"); el.classList.remove("choque"); el.innerHTML = "";
+  if (!doDia.length){ el.textContent = "✓ Ainda não há horários ocupados neste dia."; return; }
+  el.append("Horas já ocupadas neste dia: ");
+  doDia.forEach(o => el.appendChild(Object.assign(document.createElement("span"), { className: "ocup", textContent: `${o.hora}–${horaDe(minutosDe(o.hora) + o.duracao)}` })));
+  const h = $("hora").value;
+  if (h){ const m = minutosDe(h), dur = Math.max(30, Math.ceil(((ultimo && ultimo.segundos) || 0) / 60) + 15);
+    if (doDia.some(o => m < minutosDe(o.hora) + o.duracao && minutosDe(o.hora) < m + dur)){
+      el.classList.add("choque"); el.append(Object.assign(document.createElement("div"), { textContent: "⚠️ A hora escolhida coincide com outro agendamento. Escolha outra hora." })); } }
+}
+$("data").addEventListener("change", verOcupados);
+$("hora").addEventListener("change", verOcupados);
+
+/* Gestão: junta à lista os agendamentos da folha (incluindo os feitos por clientes com conta) */
+async function puxarDaFolha(){
+  if (!scriptToken()) return;
+  try{
+    const j = await enviarAgenda({ acao: "listarAgendamentos" });
+    let mudou = false;
+    (j.agendamentos || []).forEach(f => {
+      const a = agendamentos.find(x => String(x.id) === String(f.id));
+      if (!a){ agendamentos.push({ id: Number(f.id), data: f.data, hora: f.hora, nome: f.nome, tel: f.tel, origem: f.origem, destino: f.destino,
+        km: f.km, segundos: 0, preco: f.preco, pax: f.pax, malas: f.malas, notas: f.notas || "", estado: f.estado, codigo: f.codigo }); mudou = true; }
+      else if (a.estado !== f.estado || !a.codigo){ a.estado = f.estado; a.codigo = a.codigo || f.codigo; mudou = true; }
+    });
+    if (mudou) guardar();
+  }catch(e){}
+}
+
 /* ================== AGENDAMENTOS ================== */
 let agendamentos = store.get("agendamentos", []);
 
@@ -914,8 +1129,10 @@ function recolherDados(){
   const data = $("data").value, hora = $("hora").value;
   if (!data || !hora) { mostrar("Escolha o dia e a hora do agendamento.", "err"); return null; }
   if (new Date(data + "T" + hora) < new Date()) { mostrar("A data e hora têm de ser no futuro.", "err"); return null; }
-  if (!$("nome").value.trim() || !$("tel").value.trim()) { mostrar("Indique o nome e o telemóvel.", "err"); return null; }
-  return { ...ultimo, data, hora, nome: $("nome").value.trim(), tel: $("tel").value.trim(),
+  const cli = clienteAtual();
+  const nome = cli ? cli.nome + " " + cli.apelido : $("nome").value.trim(), tel = cli ? cli.tel : $("tel").value.trim();
+  if (!nome || !tel) { mostrar("Indique o nome e o telemóvel.", "err"); return null; }
+  return { ...ultimo, data, hora, nome, tel,
            pax: $("pax").value, malas: $("malas").value, notas: $("notas").value.trim(), id: Date.now() };
 }
 
@@ -1046,8 +1263,10 @@ document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
 { const v = { "#transfers": "viewDash", "#tvde": "viewTvde" }[location.hash];
   if (v) setTimeout(() => document.querySelector(`.tab[data-view="${v}"]`)?.click(), 0); }
 
-$("btnAgendar").onclick = () => {
+$("btnAgendar").onclick = async () => {
+  if (!scriptToken() && !clienteAtual()){ abrirConta("entrar", "Para confirmar o agendamento, entre na sua conta ou crie uma (é rápido)."); return; }
   const a = recolherDados(); if (!a) return;
+  if (!scriptToken()) return pedirComoCliente(a);
   a.estado = "agendada"; agendamentos.push(a); guardar();
   mostrar("Agendamento registado. A publicar para o cliente…", "ok");
   sincronizar(a, true);
@@ -1770,6 +1989,8 @@ $("dlgSave").onclick = () => {
   $("btnCalc").onclick = calcular;
   renderLista();
   renderDash();
+  atualizarConta();
+  puxarDaFolha();
   carregarScript(OSM.LEAFLET_JS, () => window.L).catch(() => {});   // prepara o mapa
 })();
 </script>
