@@ -44,3 +44,4 @@ Registo dos pedidos do Nuno e das decisões tomadas, por ordem. Serve de context
 - Pedido: registo com primeiro/último nome, telefone e email; palavra-passe gerada automaticamente e enviada por email; com conta, os agendamentos já não pedem Nome/Telemóvel; cada utilizador vê o histórico e os horários ocupados por outros; registos guardados na Drive do Nuno.
 - Feito: aba "Clientes" na folha de agendamentos, ações públicas no Apps Script (versão 13), diálogo de conta e "As minhas viagens" em `agendamento-transfers.html`. O Nuno autorizou a permissão de enviar email.
 - Depois: o agendamento passou a exigir login (cartão "Entre para agendar"); a página inicial ganhou os botões Entrar e agendar / Criar conta.
+- 2026-11-07: o botão ⚙️ Definições do agendamento foi escondido dos clientes (só com `?gestao` ou com o código guardado). O Nuno pediu um "secret do GitHub"; explicou-se que num site estático ficaria público e escolheu esconder o botão.

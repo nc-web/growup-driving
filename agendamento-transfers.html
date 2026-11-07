@@ -260,7 +260,7 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
       <div class="titulo"><h1>Transfers · Agendamento de viagens</h1><p>Agende o seu transfer ou viagem privada</p></div>
     </div>
     <div class="topo-botoes"><button class="icon-btn" id="btnConta" title="A minha conta">👤 Entrar</button>
-    <button class="icon-btn" id="btnConfig" title="Definições">⚙️ Definições</button></div>
+    <button class="icon-btn hidden" id="btnConfig" title="Definições">⚙️ Definições</button></div>
   </div>
   <nav class="tabs">
     <button class="tab on" data-view="viewAgendar">Agendar</button>
@@ -1013,6 +1013,8 @@ function atualizarConta(){
   const info = $("contaInfo"); info.classList.toggle("hidden", !c); info.innerHTML = "";
   if (c) info.append("A agendar como ", Object.assign(document.createElement("b"), { textContent: c.nome + " " + c.apelido }), ` · ${c.tel}`);
   $("cardViagens").classList.toggle("hidden", !c);
+  // ⚙️ Definições só para a gestão: link com ?gestao (gestao.html) ou browser que já tem o código de acesso
+  $("btnConfig").classList.toggle("hidden", !admin && !new URLSearchParams(location.search).has("gestao"));
   const livre = !!c || admin;   // o formulário só aparece com sessão de cliente (ou com o código de gestão)
   $("portao").classList.toggle("hidden", livre); $("viewAgendar").classList.toggle("hidden", !livre);
   $("cardAgendamentos").classList.toggle("hidden", !admin && !agendamentos.length);
