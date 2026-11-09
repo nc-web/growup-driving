@@ -302,6 +302,21 @@ if (/(^|\.)github\.io$/.test(location.hostname) && !/(^|[?&#])gestao\b/.test(loc
       <div class="grafico" style="height:220px;margin-top:16px"><canvas id="chDias" aria-label="Faturado em cada dia desta semana"></canvas></div>
     </div>
 
+    <div class="card" id="tvSemanaAnterior">
+      <h2 id="spTitulo">Semana anterior</h2>
+      <div class="objetivo">
+        <div class="obj-topo"><span id="spObjRotulo">Objetivo semanal</span><b id="spObjResultado">–</b></div>
+        <div class="obj-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="spObjBarra"><i id="spObjEnchimento"></i></div>
+        <div class="obj-info"><span id="spObjFeito"></span><span id="spObjMedia"></span></div>
+      </div>
+      <div class="kpis k3">
+        <div class="kpi"><span>Faturado na semana anterior</span><b id="spFaturado">–</b><small id="spComparar"></small></div>
+        <div class="kpi"><span>Melhor dia</span><b id="spMelhorDia">–</b><small id="spMelhorValor"></small></div>
+        <div class="kpi"><span>Lucro na semana anterior</span><b id="spLucro">–</b><small id="spDespesas"></small></div>
+      </div>
+      <div class="grafico" style="height:220px;margin-top:16px"><canvas id="chDiasAnt" aria-label="Faturado em cada dia da semana anterior"></canvas></div>
+    </div>
+
     <div class="kpis k4p">
       <div class="kpi"><span>Faturado no período</span><b id="tvReceita">–</b><small id="tvReceitaSem"></small></div>
       <div class="kpi"><span>Despesas no período</span><b id="tvDespesa">–</b><small id="tvDespesaSem"></small></div>
@@ -883,6 +898,32 @@ async function renderTvde(){
   $("saLucro").textContent = eurK(fatS - despS); $("saLucro").className = fatS - despS >= 0 ? "pos" : "neg";
   $("saDespesas").textContent = `despesas: ${eur(despS)}`;
 
+  // Semana anterior (segunda a domingo completos)
+  const diasAnt = Array.from({ length: 7 }, (_, i) => { const k = isoMais(iniAnt, i);
+    const doDia = daSemana.filter(m => m.data === k);
+    return { k, receita: doDia.filter(m => m.tipo === "receita").reduce((s, m) => s + m.valor, 0),
+             despesa: doDia.filter(m => m.tipo === "despesa").reduce((s, m) => s + m.valor, 0) }; });
+  const fatP = diasAnt.reduce((s, d) => s + d.receita, 0), despP = diasAnt.reduce((s, d) => s + d.despesa, 0);
+  const iniAnt2 = isoMais(iniAnt, -7);
+  const fatAnt2 = daSemana.filter(m => m.tipo === "receita" && m.data >= iniAnt2 && m.data < iniAnt).reduce((s, m) => s + m.valor, 0);
+  const objP = TVDE.OBJETIVO_SEMANAL, pctP = Math.min(100, Math.round(fatP / objP * 100));
+  $("spTitulo").textContent = "Semana anterior · " + semanaLonga(iniAnt);
+  $("spObjRotulo").textContent = `Objetivo semanal · ${eur0(objP)}`;
+  $("spObjResultado").textContent = fatP >= objP ? `Objetivo atingido! +${eur(fatP - objP)}` : `Faltaram ${eur(objP - fatP)}`;
+  $("spObjResultado").className = fatP >= objP ? "ok" : "";
+  $("spObjEnchimento").style.width = pctP + "%"; $("spObjEnchimento").className = fatP >= objP ? "ok" : "";
+  $("spObjBarra").setAttribute("aria-valuenow", pctP);
+  $("spObjFeito").textContent = `${eur(fatP)} faturados (${Math.round(fatP / objP * 100)}%)`;
+  $("spObjMedia").textContent = `média de ${eur(fatP / 7)} por dia`;
+  $("spFaturado").textContent = eurK(fatP);
+  $("spComparar").textContent = fatAnt2 ? `${fatP >= fatAnt2 ? "▲" : "▼"} ${Math.abs(Math.round((fatP - fatAnt2) / fatAnt2 * 100))}% vs ${eur(fatAnt2)} na semana antes (${semanaLonga(iniAnt2)})`
+    : (fatP ? "semana antes sem faturação" : "sem faturação nessa semana");
+  const melhorAnt = diasAnt.reduce((a, d) => d.receita > (a ? a.receita : 0) ? d : a, null);
+  $("spMelhorDia").textContent = melhorAnt ? nomeDia(melhorAnt.k).replace(/^./, c => c.toUpperCase()) : "–";
+  $("spMelhorValor").textContent = melhorAnt ? `${eur(melhorAnt.receita)} faturados (${new Date(melhorAnt.k + "T12:00").toLocaleDateString("pt-PT", { day: "2-digit", month: "short" })})` : "sem faturação";
+  $("spLucro").textContent = eurK(fatP - despP); $("spLucro").className = fatP - despP >= 0 ? "pos" : "neg";
+  $("spDespesas").textContent = `despesas: ${eur(despP)}`;
+
   // Objetivo semanal: mostra o que falta faturar para chegar ao objetivo
   const obj = TVDE.OBJETIVO_SEMANAL, falta = Math.max(0, obj - fatS), pct = Math.min(100, Math.round(fatS / obj * 100));
   const diasRest = dias.filter(d => d.k >= hojeS).length;   // inclui hoje
@@ -931,7 +972,17 @@ async function renderTvde(){
     options: { maintainAspectRatio: false, plugins: { legend: { display: false },
       tooltip: { callbacks: { title: it => { const d = dias[it[0].dataIndex]; return new Date(d.k + "T12:00").toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "short" }); },
         label: c => ` Faturado: ${eur(c.parsed.y)}` + (dias[c.dataIndex].despesa ? ` · despesas ${eur(dias[c.dataIndex].despesa)}` : "") } } },
-      scales: { x: xLimpo, y: { ...eixoEur, beginAtZero: true } } } });
+      scales: { x: xLimpo, y: { ...eixoEur, beginAtZero: true, suggestedMax: Math.max(...dias.map(d => d.receita)) > 0 ? undefined : 100 } } } });
+
+  // 1b) Semana anterior, dia a dia
+  desenharGrafico("chDiasAnt", { type: "bar",
+    data: { labels: diasAnt.map((d, i) => ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"][i] + " " + d.k.slice(8)),
+      datasets: [{ label: "Faturado", data: diasAnt.map(d => +d.receita.toFixed(2)),
+        backgroundColor: diasAnt.map(d => melhorAnt && d.k === melhorAnt.k ? s1 : suave(s1, .45)), borderRadius: 6, maxBarThickness: 46 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+      tooltip: { callbacks: { title: it => { const d = diasAnt[it[0].dataIndex]; return new Date(d.k + "T12:00").toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "short" }); },
+        label: c => ` Faturado: ${eur(c.parsed.y)}` + (diasAnt[c.dataIndex].despesa ? ` · despesas ${eur(diasAnt[c.dataIndex].despesa)}` : "") } } },
+      scales: { x: xLimpo, y: { ...eixoEur, beginAtZero: true, suggestedMax: fatP > 0 ? undefined : 100 } } } });
 
   // 2) Faturado por semana, com a média do período (a semana em curso fica mais clara)
   const fat = ag.semanas.map(s => +s.receita.toFixed(2));
